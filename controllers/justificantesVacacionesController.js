@@ -45,7 +45,7 @@ export const obtenerDepartamentos = async (req, res) => {
   try {
 
     const todosDepartamentos = await Departamentos.findAll()
-    return res.json(Departamentos)
+    return res.json(todosDepartamentos)
 
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })

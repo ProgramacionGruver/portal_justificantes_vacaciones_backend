@@ -67,6 +67,15 @@ const Usuarios = db.define('usuarios', {
     },
     estatus: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    },
+    turnoLunesViernes: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    turnoSabados: {
+        type: DataTypes.STRING,
         allowNull: true,
     },
     

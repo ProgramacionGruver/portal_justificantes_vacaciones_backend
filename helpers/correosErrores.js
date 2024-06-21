@@ -4,7 +4,7 @@ export const enviarCorreoErrores = async ( tipoError ) => {
 
     const mailOptions = {
         from: 'sgruver@gruver.mx',
-        to: ['jpedroza@gruver.mx', 'alexis.magdaleno@gruver.mx'],
+        to: ['monitor_rutinas@gruver.mx'],
         subject: 'Error en bot',
         html: tipoError,
     }

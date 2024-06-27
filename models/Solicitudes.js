@@ -8,8 +8,6 @@ import Sucursales from './Sucursales.js'
 import Departamentos from './Departamentos.js'
 import CatalogoMotivos from './CatalogoMotivos.js'
 
-
-
 const Solicitudes = db.define('solicitudes', {
     idSolicitud: {
         type: DataTypes.INTEGER,
@@ -43,7 +41,7 @@ const Solicitudes = db.define('solicitudes', {
     },
     idMotivo: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
     },
     descripcionMotivo: {
         type: DataTypes.STRING,
@@ -59,17 +57,17 @@ const Solicitudes = db.define('solicitudes', {
 CatalogoTipoSolicitudes.hasMany(Solicitudes, { foreignKey: 'idTipoSolicitud' })
 Solicitudes.belongsTo(CatalogoTipoSolicitudes, { foreignKey: 'idTipoSolicitud' })
 
-Usuarios.hasMany(Solicitudes, { foreignKey: 'numero_empleado' })
-Solicitudes.belongsTo(Usuarios, { foreignKey: 'numero_empleado' })
+Usuarios.hasMany(Solicitudes, { foreignKey: 'numero_empleado', sourceKey: 'numero_empleado' })
+Solicitudes.belongsTo(Usuarios, { foreignKey: 'numero_empleado', targetKey: 'numero_empleado'})
 
-Empresas.hasMany(Solicitudes, { foreignKey: 'claveEmpresa' })
-Solicitudes.belongsTo(Empresas, { foreignKey: 'claveEmpresa' })
+Empresas.hasMany(Solicitudes, { foreignKey: 'claveEmpresa', sourceKey: 'claveEmpresa' })
+Solicitudes.belongsTo(Empresas, { foreignKey: 'claveEmpresa', targetKey: 'claveEmpresa' })
 
-Sucursales.hasMany(Solicitudes, { foreignKey: 'claveSucursal' })
-Solicitudes.belongsTo(Sucursales, { foreignKey: 'claveSucursal' })
+Sucursales.hasMany(Solicitudes, { foreignKey: 'claveSucursal', sourceKey: 'claveSucursal' })
+Solicitudes.belongsTo(Sucursales, { foreignKey: 'claveSucursal', targetKey: 'claveSucursal' })
 
-Departamentos.hasMany(Solicitudes, { foreignKey: 'claveDepartamento' })
-Solicitudes.belongsTo(Departamentos, { foreignKey: 'claveDepartamento' })
+Departamentos.hasMany(Solicitudes, { foreignKey: 'claveDepartamento', sourceKey: 'claveDepartamento' })
+Solicitudes.belongsTo(Departamentos, { foreignKey: 'claveDepartamento', targetKey: 'claveDepartamento' })
 
 CatalogoMotivos.hasMany(Solicitudes, { foreignKey: 'idMotivo' })
 Solicitudes.belongsTo(CatalogoMotivos, { foreignKey: 'idMotivo' })

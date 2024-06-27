@@ -1,8 +1,8 @@
-import { DataTypes } from 'sequelize'
-import sequelize from '../config/db.js'
-import db from '../config/db.js'
-import Solicitudes from './Solicitudes.js'
-import CatalogoEstatus from './CatalogoEstatus.js'
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js';
+import db from '../config/db.js';
+import Solicitudes from './Solicitudes.js';
+import CatalogoEstatus from './CatalogoEstatus.js';
 
 const SolicitudDetalle = db.define('solicitud_detalle', {
     idSolicitudDetalle: {
@@ -12,8 +12,7 @@ const SolicitudDetalle = db.define('solicitud_detalle', {
     },
     folio: {
         type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
     },
     fechaDiaSolicitado: {
         type: DataTypes.STRING,
@@ -22,17 +21,23 @@ const SolicitudDetalle = db.define('solicitud_detalle', {
     idEstatusSolicitd: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        defaultValue: 1
+    },
+    horaDiaSolicitado: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
-},
-    {
-        sequelize,
-        modelName: "solicitud_detalle",
-    })
+}, 
+{
+    sequelize,
+    modelName: "solicitud_detalle",
+    freezeTableName: true
+});
 
-Solicitudes.hasMany(SolicitudDetalle, { foreignKey: 'folio' })
-SolicitudDetalle.belongsTo(Solicitudes, { foreignKey: 'folio' })
+Solicitudes.hasMany(SolicitudDetalle, { foreignKey: 'folio', sourceKey: 'folio' });
+SolicitudDetalle.belongsTo(Solicitudes, { foreignKey: 'folio', targetKey: 'folio' });
 
-CatalogoEstatus.hasMany(SolicitudDetalle, { foreignKey: 'idEstatusSolicitd' })
-SolicitudDetalle.belongsTo(CatalogoEstatus, { foreignKey: 'idEstatusSolicitd' })
+CatalogoEstatus.hasMany(SolicitudDetalle, { foreignKey: 'idEstatusSolicitd' });
+SolicitudDetalle.belongsTo(CatalogoEstatus, { foreignKey: 'idEstatusSolicitd' });
 
-export default SolicitudDetalle
+export default SolicitudDetalle;

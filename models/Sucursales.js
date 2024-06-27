@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/db.js'
 import db from '../config/db.js'
+import Empresas from './Empresas.js'
 
 const Sucursales = db.define('sucursales', {
     idSucursal: {
@@ -29,6 +30,10 @@ const Sucursales = db.define('sucursales', {
     gerenciaAdministrativa: {
         type: DataTypes.INTEGER,
         allowNull: true,
+    },
+    claveEmpresa: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
     
 },
@@ -36,5 +41,8 @@ const Sucursales = db.define('sucursales', {
     sequelize,
     modelName: "sucursales",
 })
+
+Empresas.hasMany(Sucursales, { foreignKey: 'claveEmpresa', sourceKey: 'claveEmpresa'})
+Sucursales.belongsTo(Empresas, { foreignKey: 'claveEmpresa', targetKey: 'claveEmpresa'})
 
 export default Sucursales

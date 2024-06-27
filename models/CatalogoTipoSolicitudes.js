@@ -8,7 +8,7 @@ const CatalogoTipoSolicitudes = db.define('catalogo_tipo_solicitudes', {
         autoIncrement: true,
         primaryKey: true
     },
-    nombreSolicitd: {
+    nombreSolicitud: {
         type: DataTypes.STRING,
         allowNull: true,
         unique: true

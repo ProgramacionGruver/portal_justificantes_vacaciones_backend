@@ -43,10 +43,8 @@ export const obtenerTurnoEmpleado = async (req, res) => {
             selectElement.dispatchEvent(new Event('change', { bubbles: true }));
         });
         
-        //const fechaInputInicio = dayjs().format("DD/MM/YYYY")
-        //const fechaInputFin = dayjs().format("DD/MM/YYYY")
-        const fechaInputInicio = '20/06/2024'
-        const fechaInputFin = '20/06/2024'
+        const fechaInputInicio = dayjs().format("DD/MM/YYYY")
+        const fechaInputFin = dayjs().format("DD/MM/YYYY")
 
         // Parsear la fecha y saber si es sabado
         const fecha = dayjs(fechaInputInicio, "DD/MM/YYYY")

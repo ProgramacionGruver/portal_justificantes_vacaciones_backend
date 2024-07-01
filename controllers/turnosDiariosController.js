@@ -50,13 +50,11 @@ export const obtenerResultadosDiarios = async (req, res) => {
         
         /**seleccionar fecha inicio select */
         const fechaInico = await pagina.waitForSelector('input[name="date_from"]')
-        //const fechaInicioFormat = dayjs().format("DD/MM/YYYY")
-        const fechaInicioFormat = '20/06/2024'
+        const fechaInicioFormat = dayjs().format("DD/MM/YYYY")
         await fechaInico.type(fechaInicioFormat)
         /**seleccionar fecha inicio fin */
         const fechaFin = await pagina.waitForSelector('input[name="date_to"]')
-        //const fechaFinalFormat = dayjs().format("DD/MM/YYYY")
-        const fechaFinalFormat = '20/06/2024'
+        const fechaFinalFormat = dayjs().format("DD/MM/YYYY")
         await fechaFin.type(fechaFinalFormat)
         /**obtener reporte*/
         await pagina.click('button[name="get_report"]')

@@ -3,6 +3,7 @@ import cors from 'cors'
 import db from './config/db.js'
 import cron from 'node-cron'
 import justificantesVacacionesRoutes from './routes/justificantesVacaciones.routes.js'
+import checksRoutes from './routes/checks.routes.js'
 import { obtenerUsuariosContpaq } from './helpers/obtenerUsuariosContpaq.js'
 import { manejoRutinaObtenerTurnoDiario } from './helpers/manejoRutinas.js'
 import { menejoRutinaObtenerTurnoEmpleado } from './helpers/manejoRutinas.js'
@@ -31,5 +32,6 @@ cron.schedule('30 23 * * *', async() => {
 })
 
 app.use('/justificantesVacaciones/api', justificantesVacacionesRoutes)
+app.use('/justificantesVacaciones/api', checksRoutes)
 
 app.listen( port, () => console.log(`El servidor está funcionando en el puerto ${ port }`) )

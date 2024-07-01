@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize'
 import db from '../config/db.js'
+import Usuarios from './Usuarios.js'
 
 const ChecksDiarios = db.define('checksDiarios', {
     idCheck: {
@@ -20,5 +21,8 @@ const ChecksDiarios = db.define('checksDiarios', {
         allowNull: false,
     }
 })
+
+Usuarios.hasMany(ChecksDiarios, { foreignKey: 'numero_empleado' })
+ChecksDiarios.belongsTo(Usuarios, { foreignKey: 'numero_empleado' })
 
 export default ChecksDiarios

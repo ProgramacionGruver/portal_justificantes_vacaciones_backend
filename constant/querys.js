@@ -60,3 +60,42 @@ export const querySolicitudesJustificantes = (fechaInicio, fechaFin, claveSucurs
       AND solicitudes.claveSucursal IN ('EXVE')
  `
 }
+
+export const queryObtenerEmpleado = (numero_empleado) => {
+  return `
+  SELECT [idUsuario]
+      ,[numero_empleado]
+      ,[nombre]
+      ,[usuario]
+      ,[correo]
+      ,[puesto]
+      ,[contrasena]
+      ,[fechaAlta]
+      ,[idPuesto]
+      ,[departamento]
+      ,[centroTrabajo]
+      ,[idDepartamentoSucursal]
+      ,[siglasCentroTrabajo]
+      ,[numeroEmpleadoJefe]
+      ,[fechaNacimiento]
+      ,[rfc]
+      ,[curp]
+      ,[sexo]
+      ,[lugarNacimiento]
+      ,[estadoCivil]
+      ,[direccion]
+      ,[codigoPostal]
+      ,[ciudad]
+      ,[estado]
+      ,[telefono]
+      ,[division]
+      ,[estatus]
+      ,[createdAt]
+      ,[updatedAt]
+      ,[sueldo]
+      ,[turnoLunesViernes]
+      ,[turnoSabados]
+  FROM [portal_sistemas].[dbo].[usuarios] 
+  WHERE numero_empleado = ${numero_empleado}
+  `
+}

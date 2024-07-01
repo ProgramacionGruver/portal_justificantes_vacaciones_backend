@@ -1,25 +1,17 @@
-import { transporter } from '../config/mail.js'
+import { transporterSGruver } from '../config/mail.js'
 
-export const enviarCorreo = async ( buffer, nombreArchivo ) => {
+export const enviarCorreo = async ( participantes, titulo, mensaje, copias, copiasOcultas) => {
 
     const mailOptions = {
         from: 'sgruver@gruver.mx',
-        to: ['jpedroza@gruver.mx'],
-        subject: 'subject',
-        html: 'Buenas tardes, adjunto los candidatos encontrados en el siguiente archivo, para mas información consultar dar click aquí <a href="http://localhost:9000/#">Click<a/>',
-        attachments: [
-            {
-                filename: nombreArchivo,
-                content: buffer,
-                contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            },
-        ],
+        to: participantes,
+        subject: titulo,
+        cc: copias,
+        bcc: copiasOcultas,
+        html: mensaje,
     }
-    await transporter.sendMail(mailOptions, ( error, info ) => {
-        if ( error ) {
-            return console.log( error )
-        }
-        console.log(`Mensaje enviado ${ info.response }`)
-    })
+    transporterSGruver.sendMail(mailOptions, (error, info) =>{
+        return error ? {errorInfo: error, mensaje: `Nensaje NO enviado ${error}`, enviado: false} : {errorInfo: info.response, mensaje: `Mensaje enviado ${info.response}`, enviado: true}
+      })
 
 }

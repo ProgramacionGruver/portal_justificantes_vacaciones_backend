@@ -18,7 +18,7 @@ const SolicitudDetalle = db.define('solicitud_detalle', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    idEstatusSolicitd: {
+    idEstatusSolicitud: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 1
@@ -37,7 +37,7 @@ const SolicitudDetalle = db.define('solicitud_detalle', {
 Solicitudes.hasMany(SolicitudDetalle, { foreignKey: 'folio', sourceKey: 'folio' });
 SolicitudDetalle.belongsTo(Solicitudes, { foreignKey: 'folio', targetKey: 'folio' });
 
-CatalogoEstatus.hasMany(SolicitudDetalle, { foreignKey: 'idEstatusSolicitd' });
-SolicitudDetalle.belongsTo(CatalogoEstatus, { foreignKey: 'idEstatusSolicitd' });
+CatalogoEstatus.hasMany(SolicitudDetalle, { foreignKey: 'idEstatusSolicitud' });
+SolicitudDetalle.belongsTo(CatalogoEstatus, { foreignKey: 'idEstatusSolicitud' });
 
 export default SolicitudDetalle;

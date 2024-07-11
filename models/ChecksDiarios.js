@@ -1,4 +1,5 @@
 import { DataTypes } from 'sequelize'
+import sequelize from '../config/db.js'
 import db from '../config/db.js'
 import Usuarios from './Usuarios.js'
 
@@ -20,6 +21,10 @@ const ChecksDiarios = db.define('checksDiarios', {
         type: DataTypes.STRING,
         allowNull: false,
     }
+},
+{
+    sequelize,
+    modelName: "checksDiarios",
 })
 
 Usuarios.hasMany(ChecksDiarios, { foreignKey: 'numero_empleado' })

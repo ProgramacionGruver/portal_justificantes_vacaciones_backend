@@ -9,7 +9,7 @@ import { manejoRutinaObtenerTurnoDiario } from './helpers/manejoRutinas.js'
 import { menejoRutinaObtenerTurnoEmpleado } from './helpers/manejoRutinas.js'
 
 const app = express()
-const port = 4040
+const port = 4022
 
 
 app.use( express.json( { extended: true } ) )

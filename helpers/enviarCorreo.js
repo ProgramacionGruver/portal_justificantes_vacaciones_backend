@@ -1,4 +1,4 @@
-import { transporterSGruver } from '../config/mail.js'
+import { transporter } from '../config/mail.js'
 
 export const enviarCorreo = async ( participantes, titulo, mensaje, copias, copiasOcultas) => {
 
@@ -10,7 +10,7 @@ export const enviarCorreo = async ( participantes, titulo, mensaje, copias, copi
         bcc: copiasOcultas,
         html: mensaje,
     }
-    transporterSGruver.sendMail(mailOptions, (error, info) =>{
+    transporter.sendMail(mailOptions, (error, info) =>{
         return error ? {errorInfo: error, mensaje: `Nensaje NO enviado ${error}`, enviado: false} : {errorInfo: info.response, mensaje: `Mensaje enviado ${info.response}`, enviado: true}
       })
 

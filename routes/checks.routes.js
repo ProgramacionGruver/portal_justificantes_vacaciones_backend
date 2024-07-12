@@ -3,9 +3,6 @@ import { obtenerChecks } from '../controllers/checksController.js'
 
 const router = express.Router()
 
-router.post('/obtenerAsistencias', obtenerChecks)
-
-
-
+router.post('/obtener/asistencias', obtenerChecks)
 
 export default router

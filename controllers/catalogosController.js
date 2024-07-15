@@ -1,4 +1,5 @@
 import CatalogoVacaciones from "../models/CatalogoVacaciones.js"
+import CatalogoTurnos from "../models/CatalogoTurnos.js"
 import Usuarios from "../models/Usuarios.js"
 
 export const obtenerCatologoVacaciones = async (req, res) => {
@@ -56,6 +57,38 @@ export const obtenerCatologoUsuarios = async (req, res) => {
   try {
     const usuarios = await Usuarios.findAll()
     return res.json(usuarios)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const actualizarCatologoUsuarios = async (req, res) => {
+  try {
+    const { idUsuario } = req.params
+    const usuario = await Usuarios.findOne({where:{ idUsuario }})
+    if(!usuario){
+      return res.status(500).json({ message: "No se encontro el usuario" })
+    }
+    const usuarios = await Usuarios.update(req.body,{where:{idUsuario}})
+    return res.json(usuarios)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const obtenerCatologoTurnos = async (req, res) => {
+  try {
+    const turnos = await CatalogoTurnos.findAll()
+    return res.json(turnos)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const agregarCatalogoTurnos = async (req, res) => {
+  try {
+    const turnos = await CatalogoTurnos.create(req.body)
+    return res.json(turnos)
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
   }

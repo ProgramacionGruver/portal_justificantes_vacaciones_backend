@@ -11,6 +11,7 @@ import { queryObtenerEmpleado } from '../constant/querys.js'
 import Solicitudes from '../models/Solicitudes.js'
 import SolicitudDetalle from '../models/SolicitudDetalle.js'
 import AutorizacionesSolicitudes from '../models/AutorizacionesSolicitudes.js'
+import DepartamentosSucursales from '../models/DepartamentosSucursales.js'
 
 export const obtenerUsuarios = async (req, res) => {
   try {
@@ -69,6 +70,17 @@ export const obtenerDepartamentos = async (req, res) => {
 
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema: " + error.message })
+  }
+}
+
+export const obtenerDepartamentosSucursales = async (req, res) => {
+  try {
+
+    const departamentosSucursales = await DepartamentosSucursales.findAll({ include: [Sucursales, Departamentos] })
+    res.json(departamentosSucursales)
+
+  } catch (error) {
+    return res.status(500).json({ message: 'Error en el sistema.(' + error.message + ')' })
   }
 }
 
@@ -169,6 +181,37 @@ export const obtenerSolicitudesPorEmpleado = async (req, res) => {
       where: {
         numero_empleado: numero_empleado
       },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+      order: [['idSolicitud', 'DESC']],
+    })
+
+    return res.json(todasSolicitudes)
+  } catch (error) {
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const obtenerTodasSolicitudes = async (req, res) => {
+  try {
+
+    const todasSolicitudes = await Solicitudes.findAll({
       include: [
         Usuarios,
         CatalogoTipoSolicitudes,

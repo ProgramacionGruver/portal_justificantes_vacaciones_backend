@@ -17,7 +17,7 @@ export const queryChecks = (fechaInicio, fechaFin, claveSucursales) => {
       usuarios.division,
       usuarios.departamento,
       usuarios.centroTrabajo,
-      usuarios.siglasCentroTrabajo,
+      usuarios.claveSucursal,
       usuarios.numeroEmpleadoJefe,
       usuarios.estatus,
       usuarios.turnoLunesViernes,
@@ -29,7 +29,7 @@ export const queryChecks = (fechaInicio, fechaFin, claveSucursales) => {
   FROM [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks
   JOIN [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios ON usuarios.numero_empleado = checks.numero_empleado
   WHERE checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND usuarios.siglasCentroTrabajo IN ('EXVE')
+  AND usuarios.claveSucursal IN ('EXVE')
   ORDER BY
     usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
  `
@@ -64,7 +64,7 @@ export const querySolicitudesJustificantes = (fechaInicio, fechaFin, claveSucurs
 					usuarios.division,
 					usuarios.departamento,
 					usuarios.centroTrabajo,
-					usuarios.siglasCentroTrabajo,
+					usuarios.claveSucursal,
 					usuarios.numeroEmpleadoJefe,
 					usuarios.estatus,
 					usuarios.turnoLunesViernes,

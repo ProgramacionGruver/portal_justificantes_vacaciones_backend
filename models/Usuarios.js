@@ -57,7 +57,7 @@ const Usuarios = db.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    siglasCentroTrabajo: {
+    claveSucursal: {
         type: DataTypes.STRING,
         allowNull: true,
     },
@@ -78,7 +78,18 @@ const Usuarios = db.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    
+    diasGanados: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    claveEmpresa: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
+    claveDepartamento: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
 },
 {
     sequelize,

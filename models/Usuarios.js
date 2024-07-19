@@ -82,6 +82,14 @@ const Usuarios = db.define('usuarios', {
         type: DataTypes.INTEGER,
         allowNull: true,
     },
+    vacacionesVencidas: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
+    sabados5s: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     claveEmpresa: {
         type: DataTypes.STRING,
         allowNull: true,

@@ -568,6 +568,267 @@ export const solicitarDiasEconomicos = async (req, res) => {
   }
 }
 
+export const solicitarDiasGanados = async (req, res) => {
+  const transaccion = await db.transaction()
+
+  try {
+
+    const nuevosDatos = req.body
+
+    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+
+    const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
+
+    const { claveSucursal, claveDepartamento, numero_empleado, idSolicitud, createdAt } = nuevaSolicitud
+
+    // Formatear la fecha createdAt
+    const fecha = new Date(createdAt)
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0')
+    const dia = fecha.getDate().toString().padStart(2, '0')
+    const año = fecha.getFullYear().toString()
+
+    const fechaFormateada = `${dia}${mes}${año}`
+
+    const folio = `${claveSucursal}-${claveDepartamento}-${numero_empleado}-${fechaFormateada}-${idSolicitud}`
+
+    await Solicitudes.update({ folio: folio }, { where: { idSolicitud: idSolicitud }, transaction: transaccion })
+
+    nuevosDatos.idEstatusSolicitud = 1
+    nuevosDatos.folio = folio
+
+    const fechasMapeadas = nuevosDatos.fechasSeleccionadas.map(fecha => {
+      return {
+        folio: nuevosDatos.folio,
+        fechaDiaSolicitado: fecha,
+        idEstatusSolicitud: nuevosDatos.idEstatusSolicitud,
+        horaDiaSolicitado: null
+      }
+    })
+    const detalles = await SolicitudDetalle.bulkCreate(fechasMapeadas, { transaction: transaccion })
+
+    for (const detalle of detalles) {
+      // Primera autorización jefeDirecto
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
+        idTipoAutorizacion: 1,
+      }, { transaction: transaccion })
+
+      // Segunda autorización admvo. camiones || R.H.
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
+        idTipoAutorizacion: 2,
+      }, { transaction: transaccion })
+    }
+
+    await transaccion.commit()
+
+    const solicitudCreada = await Solicitudes.findByPk(nuevaSolicitud.idSolicitud, {
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+    })
+
+    return res.json(solicitudCreada)
+
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const solicitarVacacionesVencidas = async (req, res) => {
+  const transaccion = await db.transaction()
+
+  try {
+
+    const nuevosDatos = req.body
+
+    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+
+    const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
+
+    const { claveSucursal, claveDepartamento, numero_empleado, idSolicitud, createdAt } = nuevaSolicitud
+
+    // Formatear la fecha createdAt
+    const fecha = new Date(createdAt)
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0')
+    const dia = fecha.getDate().toString().padStart(2, '0')
+    const año = fecha.getFullYear().toString()
+
+    const fechaFormateada = `${dia}${mes}${año}`
+
+    const folio = `${claveSucursal}-${claveDepartamento}-${numero_empleado}-${fechaFormateada}-${idSolicitud}`
+
+    await Solicitudes.update({ folio: folio }, { where: { idSolicitud: idSolicitud }, transaction: transaccion })
+
+    nuevosDatos.idEstatusSolicitud = 1
+    nuevosDatos.folio = folio
+
+    const fechasMapeadas = nuevosDatos.fechasSeleccionadas.map(fecha => {
+      return {
+        folio: nuevosDatos.folio,
+        fechaDiaSolicitado: fecha,
+        idEstatusSolicitud: nuevosDatos.idEstatusSolicitud,
+        horaDiaSolicitado: null
+      }
+    })
+    const detalles = await SolicitudDetalle.bulkCreate(fechasMapeadas, { transaction: transaccion })
+
+    for (const detalle of detalles) {
+      // Primera autorización jefeDirecto
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
+        idTipoAutorizacion: 1,
+      }, { transaction: transaccion })
+
+      // Segunda autorización admvo. camiones || R.H.
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
+        idTipoAutorizacion: 2,
+      }, { transaction: transaccion })
+    }
+
+    await transaccion.commit()
+
+    const solicitudCreada = await Solicitudes.findByPk(nuevaSolicitud.idSolicitud, {
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+    })
+
+    return res.json(solicitudCreada)
+
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const solicitarSabados5s = async (req, res) => {
+  const transaccion = await db.transaction()
+
+  try {
+
+    const nuevosDatos = req.body
+
+    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+
+    const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
+
+    const { claveSucursal, claveDepartamento, numero_empleado, idSolicitud, createdAt } = nuevaSolicitud
+
+    // Formatear la fecha createdAt
+    const fecha = new Date(createdAt)
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0')
+    const dia = fecha.getDate().toString().padStart(2, '0')
+    const año = fecha.getFullYear().toString()
+
+    const fechaFormateada = `${dia}${mes}${año}`
+
+    const folio = `${claveSucursal}-${claveDepartamento}-${numero_empleado}-${fechaFormateada}-${idSolicitud}`
+
+    await Solicitudes.update({ folio: folio }, { where: { idSolicitud: idSolicitud }, transaction: transaccion })
+
+    nuevosDatos.idEstatusSolicitud = 1
+    nuevosDatos.folio = folio
+
+    const fechasMapeadas = nuevosDatos.fechasSeleccionadas.map(fecha => {
+      return {
+        folio: nuevosDatos.folio,
+        fechaDiaSolicitado: fecha,
+        idEstatusSolicitud: nuevosDatos.idEstatusSolicitud,
+        horaDiaSolicitado: null
+      }
+    })
+    const detalles = await SolicitudDetalle.bulkCreate(fechasMapeadas, { transaction: transaccion })
+
+    for (const detalle of detalles) {
+      // Primera autorización jefeDirecto
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
+        idTipoAutorizacion: 1,
+      }, { transaction: transaccion })
+
+      // Segunda autorización admvo. camiones || R.H.
+      await AutorizacionesSolicitudes.create({
+        idSolicitudDetalle: detalle.idSolicitudDetalle,
+        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
+        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
+        idTipoAutorizacion: 2,
+      }, { transaction: transaccion })
+    }
+
+    await transaccion.commit()
+
+    const solicitudCreada = await Solicitudes.findByPk(nuevaSolicitud.idSolicitud, {
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+    })
+
+    return res.json(solicitudCreada)
+
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
 export const actualizarAutorizaciones = async (req, res) => {
   const transaccion = await db.transaction()
 
@@ -666,12 +927,10 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
   const AUTORIZADO = 2
   const RECHAZADO = 3
 
-  let transaccion
+  const transaccion = await db.transaction()
 
   try {
     const { folio } = req.params
-
-    transaccion = await db.transaction()
 
     const solicitud = await Solicitudes.findOne({
       where: {
@@ -752,21 +1011,19 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
-    if (transaccion) await transaccion.rollback()
+    await transaccion.rollback()
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }
-
 
 export const finalizarSolicitudDiasEconomicos = async (req, res) => {
   const AUTORIZADO = 2
   const RECHAZADO = 3
 
+  const transaccion = await db.transaction()
+
   try {
     const { folio } = req.params
-
-    // Iniciar transacción dentro del bloque try
-    const transaccion = await db.transaction()
 
     const solicitud = await Solicitudes.findOne({
       where: {
@@ -851,7 +1108,286 @@ export const finalizarSolicitudDiasEconomicos = async (req, res) => {
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
-    if (transaccion) await transaccion.rollback()
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const finalizarSolicitudDiasGanados = async (req, res) => {
+  const AUTORIZADO = 2
+  const RECHAZADO = 3
+
+  const transaccion = await db.transaction()
+
+  try {
+    const { folio } = req.params
+
+    const solicitud = await Solicitudes.findOne({
+      where: {
+        folio: folio
+      },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ]
+    })
+
+    if (!solicitud) {
+      await transaccion.rollback()
+      return res.status(404).json({ message: "Solicitud no encontrada" })
+    }
+
+    // Filtrar solicitud_detalles autorizados
+    const detallesAutorizados = solicitud.solicitud_detalles.filter(detalle => {
+      const autorizaciones = detalle.autorizaciones_solicitudes
+      const todasAutorizadas = autorizaciones.every(auth => auth.idEstatusAutorizacion === AUTORIZADO)
+      const algunaRechazada = autorizaciones.some(auth => auth.idEstatusAutorizacion === RECHAZADO)
+      return todasAutorizadas && !algunaRechazada
+    })
+
+    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se est+a en la lista de autorizados o no
+    for (const detalle of solicitud.solicitud_detalles) {
+      const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
+        ? AUTORIZADO
+        : RECHAZADO
+
+      await SolicitudDetalle.update(
+        { idEstatusSolicitud: nuevoEstatus },
+        { where: { idSolicitudDetalle: detalle.idSolicitudDetalle }, transaction: transaccion }
+      )
+    }
+
+    // Obtener la información del empleado
+    const informacionEmpleado = await Usuarios.findOne({
+      where: { numero_empleado: solicitud.numero_empleado }
+    })
+
+    const numeroDiasAutorizados = detallesAutorizados.length
+    const diasGanados = informacionEmpleado.diasGanados
+
+    const fechasAutorizadas = detallesAutorizados.map((detalle) => {
+      return detalle.fechaDiaSolicitado
+    })
+
+    // Descuenta los días autorizados del número de días disponibles del empleado
+    if (numeroDiasAutorizados > 0) {
+      if (diasGanados > 0 && numeroDiasAutorizados <= diasGanados) {
+        const diasRestantesActualizados = diasGanados - numeroDiasAutorizados
+        await Usuarios.update(
+          { diasGanados: diasRestantesActualizados },
+          { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
+        )
+        await transaccion.commit()
+        return res.json({ fechasAutorizadas })
+      } else {
+        await transaccion.rollback()
+        return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
+      }
+    } else {
+      return res.json({ fechasAutorizadas })
+    }
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const finalizarSolicitudVacacionesVencidas = async (req, res) => {
+  const AUTORIZADO = 2
+  const RECHAZADO = 3
+
+  const transaccion = await db.transaction()
+
+  try {
+    const { folio } = req.params
+
+    const solicitud = await Solicitudes.findOne({
+      where: {
+        folio: folio
+      },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ]
+    })
+
+    if (!solicitud) {
+      await transaccion.rollback()
+      return res.status(404).json({ message: "Solicitud no encontrada" })
+    }
+
+    // Filtrar solicitud_detalles autorizados
+    const detallesAutorizados = solicitud.solicitud_detalles.filter(detalle => {
+      const autorizaciones = detalle.autorizaciones_solicitudes
+      const todasAutorizadas = autorizaciones.every(auth => auth.idEstatusAutorizacion === AUTORIZADO)
+      const algunaRechazada = autorizaciones.some(auth => auth.idEstatusAutorizacion === RECHAZADO)
+      return todasAutorizadas && !algunaRechazada
+    })
+
+    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se est+a en la lista de autorizados o no
+    for (const detalle of solicitud.solicitud_detalles) {
+      const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
+        ? AUTORIZADO
+        : RECHAZADO
+
+      await SolicitudDetalle.update(
+        { idEstatusSolicitud: nuevoEstatus },
+        { where: { idSolicitudDetalle: detalle.idSolicitudDetalle }, transaction: transaccion }
+      )
+    }
+
+    // Obtener la información del empleado
+    const informacionEmpleado = await Usuarios.findOne({
+      where: { numero_empleado: solicitud.numero_empleado }
+    })
+
+    const numeroDiasAutorizados = detallesAutorizados.length
+    const vacacionesVencidas = informacionEmpleado.vacacionesVencidas
+
+    const fechasAutorizadas = detallesAutorizados.map((detalle) => {
+      return detalle.fechaDiaSolicitado
+    })
+
+    // Descuenta los días autorizados del número de días disponibles del empleado
+    if (numeroDiasAutorizados > 0) {
+      if (vacacionesVencidas > 0 && numeroDiasAutorizados <= vacacionesVencidas) {
+        const diasRestantesActualizados = vacacionesVencidas - numeroDiasAutorizados
+        await Usuarios.update(
+          { vacacionesVencidas: diasRestantesActualizados },
+          { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
+        )
+        await transaccion.commit()
+        return res.json({ fechasAutorizadas })
+      } else {
+        await transaccion.rollback()
+        return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
+      }
+    } else {
+      return res.json({ fechasAutorizadas })
+    }
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const finalizarSolicitudSabados5s = async (req, res) => {
+  const AUTORIZADO = 2
+  const RECHAZADO = 3
+
+  const transaccion = await db.transaction()
+
+  try {
+    const { folio } = req.params
+
+    const solicitud = await Solicitudes.findOne({
+      where: {
+        folio: folio
+      },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ]
+    })
+
+    if (!solicitud) {
+      await transaccion.rollback()
+      return res.status(404).json({ message: "Solicitud no encontrada" })
+    }
+
+    // Filtrar solicitud_detalles autorizados
+    const detallesAutorizados = solicitud.solicitud_detalles.filter(detalle => {
+      const autorizaciones = detalle.autorizaciones_solicitudes
+      const todasAutorizadas = autorizaciones.every(auth => auth.idEstatusAutorizacion === AUTORIZADO)
+      const algunaRechazada = autorizaciones.some(auth => auth.idEstatusAutorizacion === RECHAZADO)
+      return todasAutorizadas && !algunaRechazada
+    })
+
+    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se est+a en la lista de autorizados o no
+    for (const detalle of solicitud.solicitud_detalles) {
+      const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
+        ? AUTORIZADO
+        : RECHAZADO
+
+      await SolicitudDetalle.update(
+        { idEstatusSolicitud: nuevoEstatus },
+        { where: { idSolicitudDetalle: detalle.idSolicitudDetalle }, transaction: transaccion }
+      )
+    }
+
+    // Obtener la información del empleado
+    const informacionEmpleado = await Usuarios.findOne({
+      where: { numero_empleado: solicitud.numero_empleado }
+    })
+
+    const numeroDiasAutorizados = detallesAutorizados.length
+    const sabados5s = informacionEmpleado.sabados5s
+
+    const fechasAutorizadas = detallesAutorizados.map((detalle) => {
+      return detalle.fechaDiaSolicitado
+    })
+
+    // Descuenta los días autorizados del número de días disponibles del empleado
+    if (numeroDiasAutorizados > 0) {
+      if (sabados5s > 0 && numeroDiasAutorizados <= sabados5s) {
+        const diasRestantesActualizados = sabados5s - numeroDiasAutorizados
+        await Usuarios.update(
+          { sabados5s: diasRestantesActualizados },
+          { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
+        )
+        await transaccion.commit()
+        return res.json({ fechasAutorizadas })
+      } else {
+        await transaccion.rollback()
+        return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
+      }
+    } else {
+      return res.json({ fechasAutorizadas })
+    }
+  } catch (error) {
+    await transaccion.rollback()
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }

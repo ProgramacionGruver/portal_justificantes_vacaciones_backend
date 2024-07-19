@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales } from '../controllers/justificantesVacacionesController.js'
+import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s} from '../controllers/justificantesVacacionesController.js'
 
 const router = express.Router()
 
@@ -23,9 +23,15 @@ router.get('/obtenerDetalleUsuario/:numero_empleado', obtenerDetalleUsuario)
 router.post('/solicitarAusenciasYRetardos', solicitarAusenciasYRetardos)
 router.post('/solicitarVacaciones', solicitarVacaciones)
 router.post('/solicitarDiasEconomicos', solicitarDiasEconomicos)
+router.post('/solicitarDiasGanados', solicitarDiasGanados)
+router.post('/solicitarVacacionesVencidas', solicitarVacacionesVencidas)
+router.post('/solicitarSabados5s', solicitarSabados5s)
 router.post('/actualizarAutorizaciones', actualizarAutorizaciones)
 router.post('/finalizarSolicitudAusenciasYRetardos/:folio', finalizarSolicitudAusenciasYRetardos)
 router.post('/finalizarSolicitudVacaciones/:folio', finalizarSolicitudVacaciones)
 router.post('/finalizarSolicitudDiasEconomicos/:folio', finalizarSolicitudDiasEconomicos)
+router.post('/finalizarSolicitudDiasGanados/:folio', finalizarSolicitudDiasGanados)
+router.post('/finalizarSolicitudVacacionesVencidas/:folio', finalizarSolicitudVacacionesVencidas)
+router.post('/finalizarSolicitudSabados5s/:folio', finalizarSolicitudSabados5s)
 
 export default router

@@ -15,7 +15,10 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, catalogoVacaciones, 
         const esAniversario = hoy.isSame(aniversario, 'day')
         const trabajaSabado = usuarioObj.turnoSabados !== null
         const vacaciones = catalogoVacaciones.find(dia => dia.aniosLaborados === aniosEnEmpresa && dia.sabadoLaborado === trabajaSabado)
-        const claveEmpresa = nuevoUsuario.centro.slice(0,2)
+        let claveEmpresa = nuevoUsuario.n_centro.slice(0, 2)
+        if (claveEmpresa === 'GE' || claveEmpresa === 'CE') {
+            claveEmpresa = nuevoUsuario.n_centro.slice(2, 4)
+        }
         const claveDepartamentoObj = departamentos.find(departamento => departamento.nombreDepartamento === nuevoUsuario.departamento)
         const claveDepartamento = claveDepartamentoObj ? claveDepartamentoObj.claveDepartamento : null
 

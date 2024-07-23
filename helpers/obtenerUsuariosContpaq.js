@@ -34,7 +34,7 @@ export const agregarPermisosUsuarios = async () => {
               editedBy: 'programacion'
             }))
         }
-        const { data } = await apiSistemas.post('/permisos/masivo', empleadosObj)
+        const { data } = await apiSistemas.post('/permisos/masivo/justificantes', empleadosObj)
     } catch ( error ) {
         console.log( error )
     }

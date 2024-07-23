@@ -58,6 +58,37 @@ export const obtenerSucursales = async (req, res) => {
   }
 }
 
+export const obtenerSucursalesAgrupadasEmpresa =  async (req, res) => {
+  try {
+      const empresas = await Empresas.findAll()
+      const clavesEmpresas = empresas.map(empresa => {
+          return {
+              claveEmpresa: empresa.claveEmpresa,
+              razonSocial: empresa.nombreEmpresa
+          }
+      })
+
+      const sucursales = await Sucursales.findAll()
+
+      const sucursalesAgrupadas = clavesEmpresas.map(empresa => {
+          const sucursalesEmpresa = sucursales.filter(sucursal => sucursal.claveEmpresa === empresa.claveEmpresa)
+          return {
+              ...empresa,
+              sucursales: sucursalesEmpresa.map(sucursal => {
+                  return {
+                      claveSucursal: sucursal.claveSucursal,
+                      nombreSucursal: sucursal.nombreSucursal
+                  }
+              })
+          }
+      })
+
+      return res.json(sucursalesAgrupadas)
+  } catch (error) {
+      return res.status(500).json({ message: 'Error en el sistema.(' + error.message + ')' })
+  }
+}
+
 export const obtenerDepartamentos = async (req, res) => {
   try {
     const todosDepartamentos = await Departamentos.findAll()

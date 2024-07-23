@@ -16,6 +16,10 @@ const CatalogoTurnos = db.define('catalogo_turnos', {
     editedBy: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    turnoEspecial: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
     }
     
 },

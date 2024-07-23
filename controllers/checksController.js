@@ -3,6 +3,7 @@ import db from '../config/db.js'
 import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
 import weekOfYear from 'dayjs/plugin/weekOfYear.js'
+import CatalogoTurnos from '../models/CatalogoTurnos.js'
 import { queryChecks, querySolicitudesJustificantes } from '../constant/querys.js'
 
 export const obtenerChecks = async (req, res) => {
@@ -12,9 +13,9 @@ export const obtenerChecks = async (req, res) => {
     dayjs.extend(weekOfYear)
     const todoschecks = await db.query(queryChecks(fechaInicio, fechaFin),{type: QueryTypes.SELECT,})
     const todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin),{type: QueryTypes.SELECT,})
+    const turnosEspeciales = await CatalogoTurnos.findAll({where:{ turnoEspecial: 1}})
 
     const checksMap = new Map();
-
     for (const check of todoschecks) {
       const semana = dayjs(check.fechaRegistro).week() // Obtener la semana del año
       const key = `${check.numero_empleado}-${semana}-${check.fechaRegistro}`
@@ -27,8 +28,9 @@ export const obtenerChecks = async (req, res) => {
     // Agrupar los resultados por numero_empleado y semanas
     const resultados = Array.from(checksMap.values()).reduce((acc, check) => {
       const usuarioId = check.numero_empleado
-
       const semana = dayjs(check.fechaRegistro).week() // Obtener la semana del año
+      const turnoEspecialSemana = turnosEspeciales.filter(elemento => elemento.turno ===  check.turnoLunesViernes)
+      const turnoEspecialSabado = turnosEspeciales.filter(elemento => elemento.turno ===  check.turnoSabados)
 
       if (!acc[usuarioId]) {
         acc[usuarioId] = {
@@ -68,44 +70,53 @@ export const obtenerChecks = async (req, res) => {
         }
       }
 
-      const fechaRegistro = check.fechaRegistro
-      const diaSemana = dayjs(fechaRegistro).day() // 0 (Domingo) a 6 (Sábado)
-      const horaRegistro = check.horaRegistro
-      
-      //Chequeo si es retardo
-      let horaTurno 
-      if(diaSemana === 6){
-        horaTurno = parse(check.turnoSabados.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+      if(check.fechaRegistro)
+      {
+        const fechaRegistro = check.fechaRegistro
+        const diaSemana = dayjs(fechaRegistro).day() // 0 (Domingo) a 6 (Sábado)
+        const horaRegistro = check.horaRegistro
+        
+        //Chequeo si es retardo
+        let horaTurno 
+        if(diaSemana === 6){
+          horaTurno = parse(check.turnoSabados.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+        }else{
+          horaTurno = parse(check.turnoLunesViernes.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+        }
+  
+        const horaEntrada = parse(check.horaRegistro, 'HH:mm', new Date())
+        const retardo = isBefore(horaTurno, horaEntrada)
+  
+        switch (diaSemana) {
+          case 1:
+            acc[usuarioId].semanas[semana].lunes = { fechaRegistro, horaRegistro, retardo }
+            break
+          case 2:
+            acc[usuarioId].semanas[semana].martes = { fechaRegistro, horaRegistro, retardo }
+            break
+          case 3:
+            acc[usuarioId].semanas[semana].miercoles = { fechaRegistro, horaRegistro, retardo }
+            break
+          case 4:
+            acc[usuarioId].semanas[semana].jueves = { fechaRegistro, horaRegistro, retardo }
+            break
+          case 5:
+            acc[usuarioId].semanas[semana].viernes = { fechaRegistro, horaRegistro, retardo }
+            break
+          case 6:
+            acc[usuarioId].semanas[semana].sabado = { fechaRegistro, horaRegistro, retardo }
+            break
+          default:
+            break
+        }
       }else{
-        horaTurno = parse(check.turnoLunesViernes.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+        if(turnoEspecialSemana.length > 0){
+          acc[usuarioId].turnoEspecial = turnoEspecialSemana[0]
+        }else if(turnoEspecialSabado.length > 0){
+          acc[usuarioId].turnoEspecial = turnoEspecialSabado[0]
+        }
       }
-
-      const horaEntrada = parse(check.horaRegistro, 'HH:mm', new Date())
-      const retardo = isBefore(horaTurno, horaEntrada)
-
-      switch (diaSemana) {
-        case 1:
-          acc[usuarioId].semanas[semana].lunes = { fechaRegistro, horaRegistro, retardo }
-          break
-        case 2:
-          acc[usuarioId].semanas[semana].martes = { fechaRegistro, horaRegistro, retardo }
-          break
-        case 3:
-          acc[usuarioId].semanas[semana].miercoles = { fechaRegistro, horaRegistro, retardo }
-          break
-        case 4:
-          acc[usuarioId].semanas[semana].jueves = { fechaRegistro, horaRegistro, retardo }
-          break
-        case 5:
-          acc[usuarioId].semanas[semana].viernes = { fechaRegistro, horaRegistro, retardo }
-          break
-        case 6:
-          acc[usuarioId].semanas[semana].sabado = { fechaRegistro, horaRegistro, retardo }
-          break
-        default:
-          break
-      }
-
+      
       return acc
     }, {})
 

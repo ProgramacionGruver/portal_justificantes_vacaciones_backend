@@ -28,12 +28,11 @@ export const queryChecks = (fechaInicio, fechaFin, claveSucursales) => {
       usuarios.updatedAt,
       checks.fechaRegistro,
       checks.horaRegistro
-  FROM [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks
-  JOIN [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios ON usuarios.numero_empleado = checks.numero_empleado
-  WHERE checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
-  AND usuarios.claveSucursal IN ('EXVE')
-  ORDER BY
-    usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
+      FROM [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios 
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
+      AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
+      WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1
+      ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
  `
 }
 
@@ -111,7 +110,6 @@ LEFT JOIN
          [portal_justificantes_vacaciones].[dbo].[catalogo_estatus] AS e2 ON e2.idEstatusSolicitud = a2.idEstatusAutorizacion
     ) AS aut2 ON aut2.idSolicitudDetalle = solicitudDetalle.idSolicitudDetalle AND aut2.rn = 2
       WHERE solicitudDetalle.fechaDiaSolicitado BETWEEN '${fechaInicio}' AND '${fechaFin}'
-      AND solicitudes.claveSucursal IN ('EXVE')
       AND solicitudDetalle.idEstatusSolicitud = 2
  `
 }

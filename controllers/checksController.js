@@ -109,12 +109,12 @@ export const obtenerChecks = async (req, res) => {
           default:
             break
         }
-      }else{
-        if(turnoEspecialSemana.length > 0){
+      }
+      
+      if(turnoEspecialSemana.length > 0){
           acc[usuarioId].turnoEspecial = turnoEspecialSemana[0]
-        }else if(turnoEspecialSabado.length > 0){
+      }else if(turnoEspecialSabado.length > 0){
           acc[usuarioId].turnoEspecial = turnoEspecialSabado[0]
-        }
       }
       
       return acc

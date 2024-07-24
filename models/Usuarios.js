@@ -98,6 +98,10 @@ const Usuarios = db.define('usuarios', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    vacacionesVencidasRestantes: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 },
 {
     sequelize,

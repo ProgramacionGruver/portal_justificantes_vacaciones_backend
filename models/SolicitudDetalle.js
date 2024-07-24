@@ -26,6 +26,10 @@ const SolicitudDetalle = db.define('solicitud_detalle', {
     horaDiaSolicitado: {
         type: DataTypes.STRING,
         allowNull: true,
+    },
+    numeroDiasProrroga: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 }, 
 {

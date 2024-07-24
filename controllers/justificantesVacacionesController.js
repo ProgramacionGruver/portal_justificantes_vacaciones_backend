@@ -1,5 +1,5 @@
 import db from '../config/db.js'
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Op } from 'sequelize'
 import Usuarios from '../models/Usuarios.js'
 import Empresas from '../models/Empresas.js'
 import Sucursales from '../models/Sucursales.js'
@@ -174,12 +174,53 @@ export const obtenerDetalleEmpleadoYJefeDirecto = async (req, res) => {
 }
 
 export const obtenerSolicitudesPorEmpleado = async (req, res) => {
+  const PRORROGA = 7
   try {
     const { numero_empleado } = req.params
 
     const todasSolicitudes = await Solicitudes.findAll({
       where: {
-        numero_empleado: numero_empleado
+        numero_empleado: numero_empleado,
+        idTipoSolicitud: {
+          [Op.ne]: PRORROGA
+        }
+      },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+      order: [['idSolicitud', 'DESC']],
+    })
+
+    return res.json(todasSolicitudes)
+  } catch (error) {
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const obtenerProrrogasPorEmpleado = async (req, res) => {
+  const PRORROGA = 7
+  try {
+    const { numero_empleado } = req.params
+
+    const todasSolicitudes = await Solicitudes.findAll({
+      where: {
+        numero_empleado: numero_empleado,
+        idTipoSolicitud: PRORROGA
       },
       include: [
         Usuarios,
@@ -829,6 +870,96 @@ export const solicitarSabados5s = async (req, res) => {
   }
 }
 
+export const solicitarProrroga = async (req, res) => {
+  const transaccion = await db.transaction()
+
+  try {
+
+    const nuevosDatos = req.body
+
+    const { usuarioAutoriza } = nuevosDatos
+
+    const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
+
+    const { claveSucursal, claveDepartamento, numero_empleado, idSolicitud, createdAt } = nuevaSolicitud
+
+    // Formatear la fecha createdAt
+    const fecha = new Date(createdAt)
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0')
+    const dia = fecha.getDate().toString().padStart(2, '0')
+    const año = fecha.getFullYear().toString()
+
+    const fechaFormateada = `${dia}${mes}${año}`
+
+    const folio = `${claveSucursal}-${claveDepartamento}-${numero_empleado}-${fechaFormateada}-${idSolicitud}`
+
+    await Solicitudes.update({ folio: folio }, { where: { idSolicitud: idSolicitud }, transaction: transaccion })
+
+    nuevosDatos.idEstatusSolicitud = 1
+    nuevosDatos.folio = folio
+
+    const detalle = await SolicitudDetalle.create(nuevosDatos, { transaction: transaccion })
+
+    const { numeroDiasProrroga } = detalle
+
+    await AutorizacionesSolicitudes.create({
+      idSolicitudDetalle: detalle.idSolicitudDetalle,
+      numeroEmpleadoAutoriza: usuarioAutoriza.numero_empleado,
+      nombreEmpleadoAutoriza: usuarioAutoriza.nombre,
+      idTipoAutorizacion: 1,
+    }, { transaction: transaccion })
+
+
+    //Inf. del empleado, cuantas vacaciones, cuantos días econom.
+    const informacionEmpleado = await Usuarios.findOne({ where: { numero_empleado: numero_empleado } })
+
+    const vacacionesRestantes = informacionEmpleado.diasVacacionesRestantes
+    const vacacionesVencidas = informacionEmpleado.vacacionesVencidas
+
+    if (vacacionesRestantes && vacacionesRestantes > 0 && numeroDiasProrroga <= vacacionesRestantes) {
+      const nuevasVacacionesRestantes = vacacionesRestantes - numeroDiasProrroga
+      const nuevasVacacionesVencidas = vacacionesVencidas + numeroDiasProrroga
+
+      await Usuarios.update(
+        { diasVacacionesRestantes: nuevasVacacionesRestantes, vacacionesVencidas: nuevasVacacionesVencidas },
+        { where: { numero_empleado: numero_empleado }, transaction: transaccion }
+      )
+    } else {
+      await transaccion.rollback()
+      return res.status(400).json({ message: "Error de validación: días insuficientes" })
+    }
+
+    await transaccion.commit()
+
+    const solicitudCreada = await Solicitudes.findByPk(nuevaSolicitud.idSolicitud, {
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ],
+    })
+
+    return res.json(solicitudCreada)
+
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
 export const actualizarAutorizaciones = async (req, res) => {
   const transaccion = await db.transaction()
 
@@ -1270,7 +1401,7 @@ export const finalizarSolicitudVacacionesVencidas = async (req, res) => {
     })
 
     const numeroDiasAutorizados = detallesAutorizados.length
-    const vacacionesVencidas = informacionEmpleado.vacacionesVencidas
+    const vacacionesVencidasRestantes = informacionEmpleado.vacacionesVencidasRestantes
 
     const fechasAutorizadas = detallesAutorizados.map((detalle) => {
       return detalle.fechaDiaSolicitado
@@ -1278,10 +1409,10 @@ export const finalizarSolicitudVacacionesVencidas = async (req, res) => {
 
     // Descuenta los días autorizados del número de días disponibles del empleado
     if (numeroDiasAutorizados > 0) {
-      if (vacacionesVencidas > 0 && numeroDiasAutorizados <= vacacionesVencidas) {
-        const diasRestantesActualizados = vacacionesVencidas - numeroDiasAutorizados
+      if (vacacionesVencidasRestantes > 0 && numeroDiasAutorizados <= vacacionesVencidasRestantes) {
+        const diasRestantesActualizados = vacacionesVencidasRestantes - numeroDiasAutorizados
         await Usuarios.update(
-          { vacacionesVencidas: diasRestantesActualizados },
+          { vacacionesVencidasRestantes: diasRestantesActualizados },
           { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
         )
         await transaccion.commit()
@@ -1386,6 +1517,105 @@ export const finalizarSolicitudSabados5s = async (req, res) => {
     } else {
       return res.json({ fechasAutorizadas })
     }
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const finalizarSolicitudProrroga = async (req, res) => {
+  const AUTORIZADO = 2
+  const RECHAZADO = 3
+
+  const transaccion = await db.transaction()
+
+  try {
+    const { folio } = req.params
+
+    const solicitud = await Solicitudes.findOne({
+      where: {
+        folio: folio
+      },
+      include: [
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+        {
+          model: SolicitudDetalle,
+          include: [
+            CatalogoEstatus,
+            {
+              model: AutorizacionesSolicitudes,
+              include: [CatalogoEstatus],
+            },
+          ],
+        },
+      ]
+    })
+
+    if (!solicitud) {
+      await transaccion.rollback()
+      return res.status(404).json({ message: "Solicitud no encontrada" })
+    }
+
+    // Filtrar solicitud_detalles autorizados
+    const detallesAutorizados = solicitud.solicitud_detalles.filter(detalle => {
+      const autorizaciones = detalle.autorizaciones_solicitudes
+      const todasAutorizadas = autorizaciones.every(auth => auth.idEstatusAutorizacion === AUTORIZADO)
+      const algunaRechazada = autorizaciones.some(auth => auth.idEstatusAutorizacion === RECHAZADO)
+      return todasAutorizadas && !algunaRechazada
+    })
+
+    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se est+a en la lista de autorizados o no
+    for (const detalle of solicitud.solicitud_detalles) {
+      const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
+        ? AUTORIZADO
+        : RECHAZADO
+
+      await SolicitudDetalle.update(
+        { idEstatusSolicitud: nuevoEstatus },
+        { where: { idSolicitudDetalle: detalle.idSolicitudDetalle }, transaction: transaccion }
+      )
+    }
+
+    const { numeroDiasProrroga } = solicitud.solicitud_detalles[0]
+
+    // Obtener la información del empleado
+    const informacionEmpleado = await Usuarios.findOne({
+      where: { numero_empleado: solicitud.numero_empleado }
+    })
+
+    const diasVencidosRestantes = informacionEmpleado.vacacionesVencidasRestantes
+    const vacacionesRestantes = informacionEmpleado.diasVacacionesRestantes
+    const vacacionesVencidas = informacionEmpleado.vacacionesVencidas
+
+    // si autoriza entonces SUMA a diasVacacionesVencidosRestantes
+    if (detallesAutorizados && detallesAutorizados.length > 0) {
+      const nuevosDiasVencidosRestantes = diasVencidosRestantes + numeroDiasProrroga
+
+      await Usuarios.update(
+        { vacacionesVencidasRestantes: nuevosDiasVencidosRestantes },
+        { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
+      )
+
+      await transaccion.commit()
+      return res.json(true)
+    } else {
+      // sino SUMA a vacacionesRestantes y RESTA a diasVacacionesVencidos
+      const nuevasVacacionesRestantes = vacacionesRestantes + numeroDiasProrroga
+      const nuevasVacacionesVencidas = vacacionesVencidas - numeroDiasProrroga
+      await Usuarios.update(
+        { diasVacacionesRestantes: nuevasVacacionesRestantes, vacacionesVencidas: nuevasVacacionesVencidas },
+        { where: { numero_empleado: solicitud.numero_empleado }, transaction: transaccion }
+      )
+
+      await transaccion.commit()
+      return res.json(false)
+    }
+
   } catch (error) {
     await transaccion.rollback()
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })

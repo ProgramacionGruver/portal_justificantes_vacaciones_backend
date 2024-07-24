@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s} from '../controllers/justificantesVacacionesController.js'
+import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga} from '../controllers/justificantesVacacionesController.js'
 
 const router = express.Router()
 
@@ -15,6 +15,7 @@ router.get('/obtenerTipoSolicitudes', obtenerTipoSolicitudes)
 router.get('/obtenerDetalleVacacionesDiasEconomicos/:numero_empleado', obtenerDetalleVacacionesDiasEconomicos)
 router.get('/obtenerDetalleEmpleadoYJefeDirecto/:numero_empleado', obtenerDetalleEmpleadoYJefeDirecto)
 router.get('/obtenerSolicitudesPorEmpleado/:numero_empleado', obtenerSolicitudesPorEmpleado)
+router.get('/obtenerProrrogasPorEmpleado/:numero_empleado', obtenerProrrogasPorEmpleado)
 router.get('/obtenerTodasSolicitudes', obtenerTodasSolicitudes)
 router.get('/obtenerSolicitudPorFolio/:folio', obtenerSolicitudPorFolio)
 router.get('/obtenerDetalleUsuario/:numero_empleado', obtenerDetalleUsuario)
@@ -26,6 +27,7 @@ router.post('/solicitarDiasEconomicos', solicitarDiasEconomicos)
 router.post('/solicitarDiasGanados', solicitarDiasGanados)
 router.post('/solicitarVacacionesVencidas', solicitarVacacionesVencidas)
 router.post('/solicitarSabados5s', solicitarSabados5s)
+router.post('/solicitarProrroga', solicitarProrroga)
 router.post('/actualizarAutorizaciones', actualizarAutorizaciones)
 router.post('/finalizarSolicitudAusenciasYRetardos/:folio', finalizarSolicitudAusenciasYRetardos)
 router.post('/finalizarSolicitudVacaciones/:folio', finalizarSolicitudVacaciones)
@@ -33,5 +35,6 @@ router.post('/finalizarSolicitudDiasEconomicos/:folio', finalizarSolicitudDiasEc
 router.post('/finalizarSolicitudDiasGanados/:folio', finalizarSolicitudDiasGanados)
 router.post('/finalizarSolicitudVacacionesVencidas/:folio', finalizarSolicitudVacacionesVencidas)
 router.post('/finalizarSolicitudSabados5s/:folio', finalizarSolicitudSabados5s)
+router.post('/finalizarSolicitudProrroga/:folio', finalizarSolicitudProrroga)
 
 export default router

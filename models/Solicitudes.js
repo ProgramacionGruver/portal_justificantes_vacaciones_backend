@@ -44,7 +44,7 @@ const Solicitudes = db.define('solicitudes', {
         allowNull: true,
     },
     descripcionMotivo: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(350),
         allowNull: true,
     }
 

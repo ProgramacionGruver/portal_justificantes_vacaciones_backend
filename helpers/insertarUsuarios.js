@@ -6,7 +6,7 @@ import moment from 'moment-timezone'
 export const insertarUsuariosContpaq = async (nuevoUsuario, departamentos) => {
     const { numero } = nuevoUsuario
     try {
-        const usuarioObj = await Usuarios.findOne({ where: { numero_empleado: numero, estatus: ESTATUS_USUARIO.ACTIVO } })
+        const usuarioObj = await Usuarios.findOne({ where: { numero_empleado: numero } })
         const fechaIngreso = moment(nuevoUsuario.fecha_ingreso).add(1, 'day').format('YYYY-MM-DD')
         const aniosEnEmpresa = moment().diff(moment(fechaIngreso, 'YYYY-MM-DD'), 'years')
         let claveEmpresa = nuevoUsuario.centro.slice(0, 2)

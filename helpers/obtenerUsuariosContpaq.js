@@ -16,7 +16,7 @@ export const obtenerUsuariosContpaq = async () => {
         const departamentos = await Departamentos.findAll()
         for (const element of empleados) {
             await insertarUsuariosContpaq(element, departamentos)
-            return
+            continue
         }
         await actualizarEstatusUsuario(empleados)
         return

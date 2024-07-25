@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer'
 import randomUserAgent from 'random-useragent'
 import dayjs from 'dayjs'
 import Usuarios from '../models/Usuarios.js'
+import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const obtenerTurnoEmpleado = async (req, res) => {
     const navegador =  await puppeteer.launch({ headless: false })
@@ -123,10 +124,11 @@ export const obtenerTurnoEmpleado = async (req, res) => {
     }
 
     await navegador.close()
+    return
 
     } catch (error) {
         await navegador.close()
-        enviarCorreoErrores(`[${seccionError}] / [${error}]`)
+        await enviarCorreoErrores(`[${seccionError}] / [${error}]`)
         throw new Error()
     }
 }

@@ -1,17 +1,22 @@
 import { transporter } from '../config/mail.js'
 
-export const enviarCorreo = async ( participantes, titulo, mensaje, copias, copiasOcultas) => {
-
+export const enviarCorreo = async (participantes, titulo, mensaje, copias = [], copiasOcultas = []) => {
     const mailOptions = {
-        from: 'sgruver@gruver.mx',
-        to: participantes,
-        subject: titulo,
-        cc: copias,
-        bcc: copiasOcultas,
-        html: mensaje,
+      from: 's.gruver@gruver.mx',
+      to: participantes,
+      subject: titulo,
+      cc: copias.length ? copias : undefined,
+      bcc: copiasOcultas.length ? copiasOcultas : undefined,
+      html: mensaje,
     }
-    transporter.sendMail(mailOptions, (error, info) =>{
-        return error ? {errorInfo: error, mensaje: `Nensaje NO enviado ${error}`, enviado: false} : {errorInfo: info.response, mensaje: `Mensaje enviado ${info.response}`, enviado: true}
+  
+    return new Promise((resolve, reject) => {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          reject({ errorInfo: error, mensaje: `Mensaje NO enviado ${error}`, enviado: false })
+        } else {
+          resolve({ errorInfo: info.response, mensaje: `Mensaje enviado ${info.response}`, enviado: true })
+        }
       })
-
-}
+    })
+  }

@@ -1049,6 +1049,7 @@ export const finalizarSolicitudAusenciasYRetardos = async (req, res) => {
     })
 
     if (!solicitud) {
+      await transaccion.rollback()
       return res.status(404).json({ message: "Solicitud no encontrada" })
     }
 
@@ -1170,6 +1171,7 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
         return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
       }
     } else {
+      await transaccion.commit()
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
@@ -1267,6 +1269,7 @@ export const finalizarSolicitudDiasEconomicos = async (req, res) => {
         return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
       }
     } else {
+      await transaccion.commit()
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
@@ -1360,6 +1363,7 @@ export const finalizarSolicitudDiasGanados = async (req, res) => {
         return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
       }
     } else {
+      await transaccion.commit()
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
@@ -1453,6 +1457,7 @@ export const finalizarSolicitudVacacionesVencidas = async (req, res) => {
         return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
       }
     } else {
+      await transaccion.commit()
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {
@@ -1546,6 +1551,7 @@ export const finalizarSolicitudSabados5s = async (req, res) => {
         return res.status(400).json({ message: "Error de validación al aplicar los días autorizados: días insuficientes" })
       }
     } else {
+      await transaccion.commit()
       return res.json({ fechasAutorizadas })
     }
   } catch (error) {

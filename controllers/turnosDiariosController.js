@@ -99,9 +99,10 @@ export const obtenerResultadosDiarios = async (req, res) => {
         }
         await navegador.close()
         await ChecksDiarios.bulkCreate(tableData)
+        return
     } catch (error) {
         await navegador.close()
-        enviarCorreoErrores(`[${seccionError}] / [${error}]`)
+        await enviarCorreoErrores(`[${seccionError}] / [${error}]`)
     }
 }
 

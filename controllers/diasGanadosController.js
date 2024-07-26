@@ -13,13 +13,18 @@ export const obtenerDiasGanados = async (req, res) => {
 export const agregarDiasGanados = async (req, res) => {
   try {
     const { diasArray } = req.body
-    let listaDias, usuario
+    const listaDias = []
     for (const dias of diasArray) {
-      const { diasGanados, numero_empleado } = dias
-      listaDias = await DiasGanados.create(dias)
-      usuario = await Usuarios.update({diasGanados: diasGanados},{where:{numero_empleado}})
+      const { motivo, diasGanados, numero_empleado } = dias
+      const nuevoRegistro = await DiasGanados.create(dias)
+      listaDias.push(nuevoRegistro)
+      if(motivo === 'Sabados 5s'){
+        await Usuarios.update({ sabados5s: diasGanados }, { where: { numero_empleado } })
+      }else{
+        await Usuarios.update({ diasGanados: diasGanados }, { where: { numero_empleado } })
+      }
     }
-    return res.json(diasArray)
+    return res.json(listaDias)
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
   }

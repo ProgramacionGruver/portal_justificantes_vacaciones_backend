@@ -6,7 +6,7 @@ import justificantesVacacionesRoutes from './routes/justificantesVacaciones.rout
 import checksRoutes from './routes/checks.routes.js'
 import catalogoRoutes from './routes/catalogos.routes.js'
 import diasGanadosRoutes from './routes/diasGanados.routes.js'
-import { obtenerUsuariosContpaq, agregarPermisosUsuarios } from './helpers/obtenerUsuariosContpaq.js'
+import { obtenerUsuariosContpaq, agregarPermisosUsuarios, agregarPermisosProrroga } from './helpers/obtenerUsuariosContpaq.js'
 import { manejoRutinaObtenerTurnoDiario } from './helpers/manejoRutinas.js'
 import { menejoRutinaObtenerTurnoEmpleado } from './helpers/manejoRutinas.js'
 
@@ -32,6 +32,10 @@ cron.schedule('00 23 * * *', async() => {
 
 cron.schedule('30 23 * * *', async() => {
     await manejoRutinaObtenerTurnoDiario()
+})
+
+cron.schedule('0 1 * * *', async() => {
+    await agregarPermisosProrroga()
 })
 
 

@@ -111,11 +111,8 @@ export const obtenerChecks = async (req, res) => {
         }
       }
       
-      if(turnoEspecialSemana.length > 0){
-          acc[usuarioId].turnoEspecial = turnoEspecialSemana[0]
-      }else if(turnoEspecialSabado.length > 0){
-          acc[usuarioId].turnoEspecial = turnoEspecialSabado[0]
-      }
+      acc[usuarioId].turnoEspecialSemana = turnoEspecialSemana[0]
+      acc[usuarioId].turnoEspecialSabado = turnoEspecialSabado[0]
       
       return acc
     }, {})

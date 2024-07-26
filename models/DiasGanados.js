@@ -13,8 +13,8 @@ const DiasGanados = db.define('dias_ganados', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    nombreEmpleado: {
-        type: DataTypes.INTEGER,
+    nombre: {
+        type: DataTypes.STRING,
         allowNull: false,
     },
     claveEmpresa: {

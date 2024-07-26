@@ -3,18 +3,12 @@ import { formatName } from './formatearString.js'
 import { ESTATUS_USUARIO } from '../constant/estatusConst.js'
 import moment from 'moment-timezone'
 
-export const insertarUsuariosContpaq = async (nuevoUsuario, catalogoVacaciones, departamentos) => {
+export const insertarUsuariosContpaq = async (nuevoUsuario, departamentos) => {
     const { numero } = nuevoUsuario
     try {
-        const usuarioObj = await Usuarios.findOne({ where: { numero_empleado: numero, estatus: ESTATUS_USUARIO.ACTIVO } })
+        const usuarioObj = await Usuarios.findOne({ where: { numero_empleado: numero } })
         const fechaIngreso = moment(nuevoUsuario.fecha_ingreso).add(1, 'day').format('YYYY-MM-DD')
-        const fechaIngresoFormateada = moment(fechaIngreso).add(1, 'day').format('YYYY-MM-DD')
-        const aniosEnEmpresa = moment().diff(moment(fechaIngresoFormateada, 'YYYY-MM-DD'), 'years')
-        const hoy = moment()
-        const aniversario = moment(fechaIngresoFormateada, 'YYYY-MM-DD').add(aniosEnEmpresa, 'years')
-        const esAniversario = hoy.isSame(aniversario, 'day')
-        const trabajaSabado = usuarioObj.turnoSabados !== null
-        const vacaciones = catalogoVacaciones.find(dia => dia.aniosLaborados === aniosEnEmpresa && dia.sabadoLaborado === trabajaSabado)
+        const aniosEnEmpresa = moment().diff(moment(fechaIngreso, 'YYYY-MM-DD'), 'years')
         let claveEmpresa = nuevoUsuario.centro.slice(0, 2)
         if (claveEmpresa === 'GE' || claveEmpresa === 'CE') {
             claveEmpresa = nuevoUsuario.centro.slice(2, 4)
@@ -24,23 +18,6 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, catalogoVacaciones, 
 
         // Si existe actualiza el registro
         if (usuarioObj) {
-                //Si es su aniversario registra los dias de vacaciones
-                if(esAniversario){
-                    return usuarioObj.update({
-                        puesto: nuevoUsuario.puesto,
-                        departamento: nuevoUsuario.departamento,
-                        centroTrabajo: nuevoUsuario.n_centro,
-                        claveSucursal: nuevoUsuario.centro,
-                        numeroEmpleadoJefe: nuevoUsuario.numero_jefe,
-                        fechaAlta: fechaIngreso,
-                        aniosLaborados: aniosEnEmpresa,
-                        diasVacacionesLey: vacaciones.diasAsignados,
-                        diasVacacionesRestantes: vacaciones.diasAsignados,
-                        division: nuevoUsuario.division,
-                        claveEmpresa: claveEmpresa,
-                        claveDepartamento: claveDepartamento
-                    })
-                }else{   
                     return usuarioObj.update({
                         puesto: nuevoUsuario.puesto,
                         departamento: nuevoUsuario.departamento,
@@ -53,7 +30,6 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, catalogoVacaciones, 
                         claveEmpresa: claveEmpresa,
                         claveDepartamento: claveDepartamento
                     })
-                }
                 
         }else{
             // No existe crea el usuario
@@ -74,7 +50,6 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, catalogoVacaciones, 
                     claveDepartamento: claveDepartamento
                 })
         }
-
     } catch (error) {
         console.log(error)
     }
@@ -108,7 +83,7 @@ export const actualizarEstatusUsuario = async (nuevoUsuario) => {
             })
             return
         }
-
+        return
     } catch (error) {
         console.log(error)
     }

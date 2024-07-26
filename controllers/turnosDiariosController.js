@@ -5,8 +5,8 @@ import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 import ChecksDiarios from '../models/ChecksDiarios.js'
 
 export const obtenerResultadosDiarios = async (req, res) => {
-    const navegador = await puppeteer.launch({ headless: false })
-    //const navegador = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser' })
+    //const navegador = await puppeteer.launch({ headless: false })
+    const navegador = await puppeteer.launch({headless: true,args: ['--no-sandbox', '--disable-setuid-sandbox']})
     let seccionError = 'Creacion de web'
     try {
         const cabezera = randomUserAgent.getRandom()

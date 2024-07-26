@@ -5,8 +5,8 @@ import Usuarios from '../models/Usuarios.js'
 import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const obtenerTurnoEmpleado = async (req, res) => {
-    const navegador =  await puppeteer.launch({ headless: false })
-    //const navegador = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser' })
+    //const navegador =  await puppeteer.launch({ headless: false })
+    const navegador = await puppeteer.launch({headless: true,args: ['--no-sandbox', '--disable-setuid-sandbox']})
     let seccionError = 'Creacion de web'
     try {
         const cabezera = randomUserAgent.getRandom()

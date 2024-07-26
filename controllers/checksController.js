@@ -77,34 +77,45 @@ export const obtenerChecks = async (req, res) => {
         const horaRegistro = check.horaRegistro
         
         //Chequeo si es retardo
-        let horaTurno 
+        let horaTurno, sinTurno = false
         if(diaSemana === 6){
-          horaTurno = parse(check.turnoSabados.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+          if(!check.turnoSabados){
+            sinTurno = true
+          }else{
+            horaTurno = parse(check.turnoSabados.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+          }
         }else{
-          horaTurno = parse(check.turnoLunesViernes.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+          if(!check.turnoLunesViernes){
+            sinTurno = true
+          }else{
+            horaTurno = parse(check.turnoLunesViernes.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
+          }
         }
   
         const horaEntrada = parse(check.horaRegistro, 'HH:mm', new Date())
-        const retardo = isBefore(horaTurno, horaEntrada)
+        let retardo = false
+        if(!sinTurno){
+           retardo = isBefore(horaTurno, horaEntrada)
+        }
   
         switch (diaSemana) {
           case 1:
-            acc[usuarioId].semanas[semana].lunes = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].lunes = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           case 2:
-            acc[usuarioId].semanas[semana].martes = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].martes = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           case 3:
-            acc[usuarioId].semanas[semana].miercoles = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].miercoles = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           case 4:
-            acc[usuarioId].semanas[semana].jueves = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].jueves = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           case 5:
-            acc[usuarioId].semanas[semana].viernes = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].viernes = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           case 6:
-            acc[usuarioId].semanas[semana].sabado = { fechaRegistro, horaRegistro, retardo }
+            acc[usuarioId].semanas[semana].sabado = { fechaRegistro, horaRegistro, retardo, sinTurno }
             break
           default:
             break

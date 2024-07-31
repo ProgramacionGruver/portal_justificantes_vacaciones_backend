@@ -55,17 +55,46 @@ export const agregarPermisosProrroga = async () => {
         const catalogoVacaciones = await CatalogoVacaciones.findAll()
         const hoy = moment().startOf('day')
         for (const usuario of usuariosRegistrados) {
+                //INGRESO Y ANIVERSARIO
                 const fechaIngreso = moment(usuario.fechaAlta).startOf('day')
                 const aniosEnEmpresa = hoy.diff(fechaIngreso, 'years')
                 const aniversario = fechaIngreso.add(aniosEnEmpresa, 'years')
                 const proximoAniversario = moment(aniversario).add(1, 'year').startOf('day')
                 const esAniversario = hoy.isSame(aniversario, 'day')
+
+                //DIAS DE VACACIONES CORRESPONDIENTES
                 const turnoEspecialSabado = turnosEspeciales.filter(elemento => elemento.turno ===  usuario.turnoSabados)
                 const trabajaSabado = turnoEspecialSabado.length === 0
                 const vacaciones = catalogoVacaciones.find(dia => dia.aniosLaborados === aniosEnEmpresa && dia.sabadoLaborado === trabajaSabado)
+                
+                //NOTIFICACION DIAS POR VENCER
                 const faltaUnMes = hoy.isSame(moment(proximoAniversario).subtract(1, 'month'), 'day')
                 const faltaQuinceDias = hoy.isSame(moment(proximoAniversario).subtract(15, 'days'), 'day')
-                
+
+                //DIAS ECONOMICOS
+                const tresMesesDespues = moment(fechaIngreso).add(3, 'months').startOf('day')
+                const contratoIndeterminado = hoy.isSame(tresMesesDespues, 'day')
+
+                // QUITAR DIAS DE VACACIONES VENCIDOS DESPUES DE 3 MESES
+                const tresMesesDespuesAniversario = moment(proximoAniversario).add(3, 'months').startOf('day');
+                const pasaronTresMesesAniversario = hoy.isSameOrAfter(tresMesesDespuesAniversario, 'day');
+
+                // QUITAR DIAS DE VACACIONES VENCIDOS DESPUES DE 6 MESES
+                const seisMesesDespuesAniversario = moment(proximoAniversario).add(6, 'months').startOf('day');
+                const pasaronSeisMesesAniversario = hoy.isSameOrAfter(seisMesesDespuesAniversario, 'day');
+
+                if(contratoIndeterminado){
+                    await Usuarios.update({diasEconomicosLey: 3, diasEconomicosRestantes: 3}, {where:{numero_empleado: usuario.numero_empleado}})
+                }
+
+                if(pasaronTresMesesAniversario){
+                    await Usuarios.update({vacacionesVencidasRestantes: 0}, {where:{numero_empleado: usuario.numero_empleado}})
+                }
+
+                if(pasaronSeisMesesAniversario){
+                    await Usuarios.update({vacacionesVencidasRestantes: 0}, {where:{numero_empleado: usuario.numero_empleado}})
+                }
+
                 if(faltaUnMes && usuario.diasVacacionesRestantes > 0){
                     let correo
                     const [detalleEmpleado] = await db.query(queryObtenerEmpleado(usuario.numero_empleado), { type: QueryTypes.SELECT })

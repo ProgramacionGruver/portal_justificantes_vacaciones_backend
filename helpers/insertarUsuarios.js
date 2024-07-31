@@ -39,8 +39,6 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, departamentos) => {
                     puesto: formatName(nuevoUsuario.puesto),
                     fechaAlta: fechaIngreso,
                     aniosLaborados: aniosEnEmpresa,
-                    diasEconomicosLey: 3,
-                    diasEconomicosRestantes: 3,
                     departamento: nuevoUsuario.departamento,
                     centroTrabajo: nuevoUsuario.n_centro,
                     claveSucursal: nuevoUsuario.centro,

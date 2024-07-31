@@ -1,4 +1,5 @@
 import dbPuestos from '../config/dbPuestos.js'
+import db from '../config/db.js'
 import CatalogoVacaciones from '../models/CatalogoVacaciones.js'
 import Departamentos from '../models/Departamentos.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
@@ -8,6 +9,7 @@ import { apiSistemas } from '../boot/axiosSistemas.js'
 import { insertarUsuariosContpaq, actualizarEstatusUsuario } from './insertarUsuarios.js'
 import { enviarCorreo } from './enviarCorreo.js'
 import { mensajeCorreoMesVacaciones } from '../constant/mensajeCorreo.js'
+import { queryObtenerEmpleado } from '../constant/querys.js'
 import moment from 'moment-timezone'
 
 export const obtenerUsuariosContpaq = async () => {
@@ -65,9 +67,17 @@ export const agregarPermisosProrroga = async () => {
                 const faltaQuinceDias = hoy.isSame(moment(proximoAniversario).subtract(15, 'days'), 'day')
                 
                 if(faltaUnMes && usuario.diasVacacionesRestantes > 0){
-                    await enviarCorreo(['amagdaleno@gruver.mx'],`Aprovecha tus vacaciones: Queda un mes para tu aniversario`, mensajeCorreoMesVacaciones(usuario, proximoAniversario))
+                    let correo
+                    const [detalleEmpleado] = await db.query(queryObtenerEmpleado(usuario.numero_empleado), { type: QueryTypes.SELECT })
+                    const [detalleJefe] = await db.query(queryObtenerEmpleado(usuario.numeroEmpleadoJefe), { type: QueryTypes.SELECT })
+                    if (detalleEmpleado[0]?.correo && detalleEmpleado[0].correo !== '') {
+                        correo = detalleEmpleado[0].correo
+                    } else {
+                        correo = detalleJefe[0].correo
+                    }
+                    await enviarCorreo([correo],`Aprovecha tus vacaciones: Queda un mes para tu aniversario`, mensajeCorreoMesVacaciones(usuario, proximoAniversario))
                 }else if(faltaQuinceDias && usuario.diasVacacionesRestantes > 0){
-                     const { data } = await apiSistemas.post('/permisos/justificantes/prorroga', usuario.datavalues)
+                    const { data } = await apiSistemas.post('/permisos/justificantes/prorroga', usuario.dataValues)
                 }else if(esAniversario){
                     const { data } = await apiSistemas.delete('/permisos/justificantes/prorroga', { data: usuario.dataValues })
                     await Usuarios.update({diasVacacionesLey: vacaciones.diasAsignados, diasVacacionesRestantes: vacaciones.diasAsignados}, {where:{numero_empleado: usuario.numero_empleado}})

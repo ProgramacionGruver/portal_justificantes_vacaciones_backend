@@ -12,6 +12,7 @@ import Solicitudes from '../models/Solicitudes.js'
 import SolicitudDetalle from '../models/SolicitudDetalle.js'
 import AutorizacionesSolicitudes from '../models/AutorizacionesSolicitudes.js'
 import DepartamentosSucursales from '../models/DepartamentosSucursales.js'
+import dayjs from 'dayjs'
 
 export const obtenerUsuarios = async (req, res) => {
   try {
@@ -58,34 +59,34 @@ export const obtenerSucursales = async (req, res) => {
   }
 }
 
-export const obtenerSucursalesAgrupadasEmpresa =  async (req, res) => {
+export const obtenerSucursalesAgrupadasEmpresa = async (req, res) => {
   try {
-      const empresas = await Empresas.findAll()
-      const clavesEmpresas = empresas.map(empresa => {
+    const empresas = await Empresas.findAll()
+    const clavesEmpresas = empresas.map(empresa => {
+      return {
+        claveEmpresa: empresa.claveEmpresa,
+        razonSocial: empresa.nombreEmpresa
+      }
+    })
+
+    const sucursales = await Sucursales.findAll()
+
+    const sucursalesAgrupadas = clavesEmpresas.map(empresa => {
+      const sucursalesEmpresa = sucursales.filter(sucursal => sucursal.claveEmpresa === empresa.claveEmpresa)
+      return {
+        ...empresa,
+        sucursales: sucursalesEmpresa.map(sucursal => {
           return {
-              claveEmpresa: empresa.claveEmpresa,
-              razonSocial: empresa.nombreEmpresa
+            claveSucursal: sucursal.claveSucursal,
+            nombreSucursal: sucursal.nombreSucursal
           }
-      })
+        })
+      }
+    })
 
-      const sucursales = await Sucursales.findAll()
-
-      const sucursalesAgrupadas = clavesEmpresas.map(empresa => {
-          const sucursalesEmpresa = sucursales.filter(sucursal => sucursal.claveEmpresa === empresa.claveEmpresa)
-          return {
-              ...empresa,
-              sucursales: sucursalesEmpresa.map(sucursal => {
-                  return {
-                      claveSucursal: sucursal.claveSucursal,
-                      nombreSucursal: sucursal.nombreSucursal
-                  }
-              })
-          }
-      })
-
-      return res.json(sucursalesAgrupadas)
+    return res.json(sucursalesAgrupadas)
   } catch (error) {
-      return res.status(500).json({ message: 'Error en el sistema.(' + error.message + ')' })
+    return res.status(500).json({ message: 'Error en el sistema.(' + error.message + ')' })
   }
 }
 
@@ -377,7 +378,7 @@ export const solicitarAusenciasYRetardos = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -426,14 +427,6 @@ export const solicitarAusenciasYRetardos = async (req, res) => {
         nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
         idTipoAutorizacion: 1,
       }, { transaction: transaccion })
-
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
-      }, { transaction: transaccion })
     }
 
     await transaccion.commit()
@@ -473,7 +466,7 @@ export const solicitarVacaciones = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -511,14 +504,6 @@ export const solicitarVacaciones = async (req, res) => {
         numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
         nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
         idTipoAutorizacion: 1,
-      }, { transaction: transaccion })
-
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
       }, { transaction: transaccion })
     }
 
@@ -560,7 +545,7 @@ export const solicitarDiasEconomicos = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -598,14 +583,6 @@ export const solicitarDiasEconomicos = async (req, res) => {
         numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
         nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
         idTipoAutorizacion: 1,
-      }, { transaction: transaccion })
-
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
       }, { transaction: transaccion })
     }
 
@@ -647,7 +624,7 @@ export const solicitarDiasGanados = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -687,13 +664,6 @@ export const solicitarDiasGanados = async (req, res) => {
         idTipoAutorizacion: 1,
       }, { transaction: transaccion })
 
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
-      }, { transaction: transaccion })
     }
 
     await transaccion.commit()
@@ -734,7 +704,7 @@ export const solicitarVacacionesVencidas = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -772,14 +742,6 @@ export const solicitarVacacionesVencidas = async (req, res) => {
         numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
         nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
         idTipoAutorizacion: 1,
-      }, { transaction: transaccion })
-
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
       }, { transaction: transaccion })
     }
 
@@ -821,7 +783,7 @@ export const solicitarSabados5s = async (req, res) => {
 
     const nuevosDatos = req.body
 
-    const { usuariosAutorizan: { primeraAutorizacion, segundaAutorizacion } } = nuevosDatos
+    const { usuariosAutorizan: { primeraAutorizacion } } = nuevosDatos
 
     const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
 
@@ -859,14 +821,6 @@ export const solicitarSabados5s = async (req, res) => {
         numeroEmpleadoAutoriza: primeraAutorizacion.numero_empleado,
         nombreEmpleadoAutoriza: primeraAutorizacion.nombre,
         idTipoAutorizacion: 1,
-      }, { transaction: transaccion })
-
-      // Segunda autorización admvo. camiones || R.H.
-      await AutorizacionesSolicitudes.create({
-        idSolicitudDetalle: detalle.idSolicitudDetalle,
-        numeroEmpleadoAutoriza: segundaAutorizacion.numero_empleado,
-        nombreEmpleadoAutoriza: segundaAutorizacion.nombre,
-        idTipoAutorizacion: 2,
       }, { transaction: transaccion })
     }
 
@@ -1096,9 +1050,7 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
     const { folio } = req.params
 
     const solicitud = await Solicitudes.findOne({
-      where: {
-        folio: folio
-      },
+      where: { folio },
       include: [
         Usuarios,
         CatalogoTipoSolicitudes,
@@ -1116,7 +1068,7 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
             },
           ],
         },
-      ]
+      ],
     })
 
     if (!solicitud) {
@@ -1132,7 +1084,7 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
       return todasAutorizadas && !algunaRechazada
     })
 
-    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se est+a en la lista de autorizados o no
+    // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si está en la lista de autorizados o no
     for (const detalle of solicitud.solicitud_detalles) {
       const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
         ? AUTORIZADO
@@ -1152,13 +1104,31 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
     const numeroDiasAutorizados = detallesAutorizados.length
     const diasVacacionesDisponibles = informacionEmpleado.diasVacacionesRestantes
 
-    const fechasAutorizadas = detallesAutorizados.map((detalle) => {
-      return detalle.fechaDiaSolicitado
-    })
+    const fechasAutorizadas = detallesAutorizados.map(detalle => detalle.fechaDiaSolicitado)
+    const fechaDeSolicitud = dayjs(solicitud.createdAt)
 
-    // Descuenta los días autorizados del número de días disponibles del empleado
+    // Para obtener la fecha de aniversario
+    const fechaAlta = dayjs(informacionEmpleado.fechaAlta)
+    const anioActual = dayjs().year()
+    const fechaAniversario = fechaAlta.year(anioActual)
+
+    const fechaAutorizacion = detallesAutorizados && detallesAutorizados.length > 0
+      ? dayjs(detallesAutorizados[0].autorizaciones_solicitudes[0].createdAt)
+      : null
+
+    const solicitudAntesAniversario = fechaDeSolicitud.isBefore(fechaAniversario)
+    const autorizacionDespuesAniversario = fechaAutorizacion && fechaAutorizacion.isAfter(fechaAniversario)
+
+    // Descuenta los días autorizados del número de días disponibles del empleado si no aplica la condición
     if (numeroDiasAutorizados > 0) {
       if (diasVacacionesDisponibles > 0 && numeroDiasAutorizados <= diasVacacionesDisponibles) {
+
+        // si la solicitud es antes del aniversario y la autorización es después del aniversario, termina y no realiza el descuento de días
+        if (solicitudAntesAniversario && autorizacionDespuesAniversario) {
+          await transaccion.commit()
+          return res.json({ fechasAutorizadas })
+        }
+
         const diasRestantesActualizados = diasVacacionesDisponibles - numeroDiasAutorizados
         await Usuarios.update(
           { diasVacacionesRestantes: diasRestantesActualizados },

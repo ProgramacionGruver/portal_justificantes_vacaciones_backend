@@ -71,10 +71,6 @@ export const agregarPermisosProrroga = async () => {
                 const faltaUnMes = hoy.isSame(moment(proximoAniversario).subtract(1, 'month'), 'day')
                 const faltaQuinceDias = hoy.isSame(moment(proximoAniversario).subtract(15, 'days'), 'day')
 
-                //DIAS ECONOMICOS
-                const tresMesesDespues = moment(fechaIngreso).add(3, 'months').startOf('day')
-                const contratoIndeterminado = hoy.isSame(tresMesesDespues, 'day')
-
                 // QUITAR DIAS DE VACACIONES VENCIDOS DESPUES DE 3 MESES
                 const tresMesesDespuesAniversario = moment(proximoAniversario).add(3, 'months').startOf('day');
                 const pasaronTresMesesAniversario = hoy.isSameOrAfter(tresMesesDespuesAniversario, 'day');
@@ -82,10 +78,6 @@ export const agregarPermisosProrroga = async () => {
                 // QUITAR DIAS DE VACACIONES VENCIDOS DESPUES DE 6 MESES
                 const seisMesesDespuesAniversario = moment(proximoAniversario).add(6, 'months').startOf('day');
                 const pasaronSeisMesesAniversario = hoy.isSameOrAfter(seisMesesDespuesAniversario, 'day');
-
-                if(contratoIndeterminado){
-                    await Usuarios.update({diasEconomicosLey: 3, diasEconomicosRestantes: 3}, {where:{numero_empleado: usuario.numero_empleado}})
-                }
 
                 if(pasaronTresMesesAniversario){
                     await Usuarios.update({vacacionesVencidasRestantes: 0}, {where:{numero_empleado: usuario.numero_empleado}})

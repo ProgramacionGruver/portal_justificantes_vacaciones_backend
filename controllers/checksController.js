@@ -187,3 +187,162 @@ export const obtenerChecks = async (req, res) => {
   }
 }
 
+export const obtenerFaltas = async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin } = req.body
+    const diasEnRango = await obtenerDiasEnRango(fechaInicio, fechaFin)
+    const usuarios = await procesarDatos(fechaInicio, fechaFin, diasEnRango)
+    return res.json(usuarios)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+const obtenerDiasEnRango = async (fechaInicio, fechaFin) => {
+  const start = dayjs(fechaInicio)
+  const end = dayjs(fechaFin)
+  const diasEnRango = []
+
+  for (let date = start; date.isBefore(end) || date.isSame(end); date = date.add(1, 'day')) {
+    if (date.day() !== 0) {
+      diasEnRango.push({
+        fecha: date.format('YYYY-MM-DD'),
+        diaSemana: date.format('dddd')
+      })
+    }
+  }
+  return diasEnRango
+}
+
+const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
+  try {
+    const todoschecks = await db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
+    const todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
+    const turnosEspeciales = await CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+
+    const usuariosMap = new Map()
+
+    // Procesar los cheques
+    todoschecks.forEach(check => {
+      if (!usuariosMap.has(check.numero_empleado)) {
+        usuariosMap.set(check.numero_empleado, {
+          numero_empleado: check.numero_empleado,
+          nombre: check.nombre,
+          fechaAlta: check.fechaAlta,
+          aniosLaborados: check.aniosLaborados,
+          diasVacacionesLey: check.diasVacacionesLey,
+          diasVacacionesRestantes: check.diasVacacionesRestantes,
+          diasEconomicosLey: check.diasEconomicosLey,
+          diasEconomicosRestantes: check.diasEconomicosRestantes,
+          puesto: check.puesto,
+          division: check.division,
+          departamento: check.departamento,
+          centroTrabajo: check.centroTrabajo,
+          claveEmpresa: check.claveEmpresa,
+          claveSucursal: check.claveSucursal,
+          claveDepartamento: check.claveDepartamento,
+          numeroEmpleadoJefe: check.numeroEmpleadoJefe,
+          estatus: check.estatus,
+          turnoLunesViernes: check.turnoLunesViernes,
+          turnoSabados: check.turnoSabados,
+          createdAt: check.createdAt,
+          updatedAt: check.updatedAt,
+          faltas: 0,
+          asistencias: 0,
+          justificantes: 0,
+          fechaFaltas: [],
+          fechaAsistencias: [],
+          fechasProcesadas: new Set()
+        })
+      }
+
+      const usuario = usuariosMap.get(check.numero_empleado)
+      const fechaRegistro = check.fechaRegistro
+
+      if (fechaRegistro && !usuario.fechasProcesadas.has(fechaRegistro)) {
+        usuario.asistencias += 1
+        usuario.fechaAsistencias.push(fechaRegistro)
+        usuario.fechasProcesadas.add(fechaRegistro)
+      }
+    })
+
+    // Procesar las solicitudes
+    todosSolicitudes.forEach(solicitud => {
+      const usuarioId = solicitud.numero_empleado
+      const fechaSolicitud = solicitud.fechaDiaSolicitado
+
+      if (!usuariosMap.has(usuarioId)) {
+        usuariosMap.set(usuarioId, {
+          numero_empleado: solicitud.numero_empleado,
+          nombre: solicitud.nombre,
+          fechaAlta: solicitud.fechaAlta,
+          aniosLaborados: solicitud.aniosLaborados,
+          diasVacacionesLey: solicitud.diasVacacionesLey,
+          diasVacacionesRestantes: solicitud.diasVacacionesRestantes,
+          diasEconomicosLey: solicitud.diasEconomicosLey,
+          diasEconomicosRestantes: solicitud.diasEconomicosRestantes,
+          puesto: solicitud.puesto,
+          division: solicitud.division,
+          departamento: solicitud.departamento,
+          centroTrabajo: solicitud.centroTrabajo,
+          claveEmpresa: solicitud.claveEmpresa,
+          claveSucursal: solicitud.claveSucursal,
+          claveDepartamento: solicitud.claveDepartamento,
+          numeroEmpleadoJefe: solicitud.numeroEmpleadoJefe,
+          estatus: solicitud.estatus,
+          turnoLunesViernes: solicitud.turnoLunesViernes,
+          turnoSabados: solicitud.turnoSabados,
+          createdAt: solicitud.createdAt,
+          updatedAt: solicitud.updatedAt,
+          faltas: 0,
+          asistencias: 0,
+          justificantes: 0,
+          fechaFaltas: [],
+          fechaAsistencias: [],
+          fechasProcesadas: new Set()
+        })
+      }
+
+      const usuario = usuariosMap.get(usuarioId)
+
+      if (fechaSolicitud && !usuario.fechasProcesadas.has(fechaSolicitud)) {
+        usuario.asistencias += 1
+        usuario.fechaAsistencias.push(fechaSolicitud)
+        usuario.fechasProcesadas.add(fechaSolicitud)
+      }
+    })
+
+    // Agregar las fechas de faltas y manejar turnos especiales
+    usuariosMap.forEach(usuario => {
+      const tieneTurnoEspecialSemana = turnosEspeciales.some(turno => turno.turno === usuario.turnoLunesViernes)
+      const tieneTurnoEspecialSabado = turnosEspeciales.some(turno => turno.turno === usuario.turnoSabados)
+
+      diasEnRango.forEach(dia => {
+        const esSabado = dayjs(dia.fecha).day() === 6
+
+        if (tieneTurnoEspecialSemana || (tieneTurnoEspecialSabado && esSabado)) {
+          if (!usuario.fechaAsistencias.includes(dia.fecha) && !usuario.fechasProcesadas.has(dia.fecha)) {
+            usuario.asistencias += 1
+            usuario.fechaAsistencias.push(dia.fecha)
+            usuario.fechasProcesadas.add(dia.fecha)
+          }
+        } else {
+          if (!usuario.fechaAsistencias.includes(dia.fecha)) {
+            usuario.faltas += 1
+            usuario.fechaFaltas.push(dia.fecha)
+          }
+        }
+      })
+    })
+
+    // Convertir Map a Array y eliminar fechasProcesadas
+    const usuariosUnicos = Array.from(usuariosMap.values()).map(usuario => {
+      delete usuario.fechasProcesadas
+      return usuario
+    })
+
+    return usuariosUnicos
+  } catch (error) {
+    throw error
+  }
+}

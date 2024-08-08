@@ -3,16 +3,14 @@ import { formatName } from './formatearString.js'
 import { ESTATUS_USUARIO } from '../constant/estatusConst.js'
 import moment from 'moment-timezone'
 
-export const insertarUsuariosContpaq = async (nuevoUsuario, departamentos) => {
+export const insertarUsuariosContpaq = async (nuevoUsuario, sucursales, departamentos) => {
     const { numero } = nuevoUsuario
     try {
         const usuarioObj = await Usuarios.findOne({ where: { numero_empleado: numero } })
         const fechaIngreso = moment(nuevoUsuario.fecha_ingreso).add(1, 'day').format('YYYY-MM-DD')
         const aniosEnEmpresa = moment().diff(moment(fechaIngreso, 'YYYY-MM-DD'), 'years')
-        let claveEmpresa = nuevoUsuario.centro.slice(0, 2)
-        if (claveEmpresa === 'GE' || claveEmpresa === 'CE') {
-            claveEmpresa = nuevoUsuario.centro.slice(2, 4)
-        }
+        const claveSucursalObj = sucursales.find(sucursal => sucursal.claveSucursal === nuevoUsuario.centro)
+        const claveEmpresa = claveSucursalObj ? claveSucursalObj.claveEmpresa : null
         const claveDepartamentoObj = departamentos.find(departamento => departamento.nombreDepartamento === nuevoUsuario.departamento)
         const claveDepartamento = claveDepartamentoObj ? claveDepartamentoObj.claveDepartamento : null
 

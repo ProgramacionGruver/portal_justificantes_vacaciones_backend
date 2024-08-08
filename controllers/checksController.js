@@ -4,58 +4,71 @@ import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
 import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
-import { queryChecks, querySolicitudesJustificantes } from '../constant/querys.js'
+import { queryChecks, queryChecksUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
 
 export const obtenerChecks = async (req, res) => {
   try {
-    const { fechaInicio, fechaFin } = req.body
-    
+    const { fechaInicio, fechaFin, numero_empleado } = req.body
     dayjs.extend(weekOfYear)
-    const todoschecks = await db.query(queryChecks(fechaInicio, fechaFin),{type: QueryTypes.SELECT,})
-    const todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin),{type: QueryTypes.SELECT,})
-    const turnosEspeciales = await CatalogoTurnos.findAll({where:{ turnoEspecial: 1}})
 
-    const checksMap = new Map();
+    let todoschecks
+    if (!numero_empleado) {
+      todoschecks = await db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
+    } else {
+      todoschecks = await db.query(queryChecksUsuario(fechaInicio, fechaFin, numero_empleado), { type: QueryTypes.SELECT })
+    }
+
+    let todosSolicitudes
+    if (!numero_empleado) {
+      todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
+    } else {
+      todosSolicitudes = await db.query(querySolicitudesJustificantesUsuario(fechaInicio, fechaFin, numero_empleado), { type: QueryTypes.SELECT })
+    }
+
+    const turnosEspeciales = await CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+
+    const checksMap = new Map()
     for (const check of todoschecks) {
-      const semana = dayjs(check.fechaRegistro).week() // Obtener la semana del año
+      const semana = dayjs(check.fechaRegistro).week()
       const key = `${check.numero_empleado}-${semana}-${check.fechaRegistro}`
-    
+
       if (!checksMap.has(key)) {
         checksMap.set(key, check)
       }
     }
 
-    // Agrupar los resultados por numero_empleado y semanas
+    const diasEnRango = await obtenerDiasEnRango(fechaInicio, fechaFin)
+
     const resultados = Array.from(checksMap.values()).reduce((acc, check) => {
       const usuarioId = check.numero_empleado
-      const semana = dayjs(check.fechaRegistro).week() // Obtener la semana del año
-      const turnoEspecialSemana = turnosEspeciales.filter(elemento => elemento.turno ===  check.turnoLunesViernes)
-      const turnoEspecialSabado = turnosEspeciales.filter(elemento => elemento.turno ===  check.turnoSabados)
+      const semana = dayjs(check.fechaRegistro).week()
+      const turnoEspecialSemana = turnosEspeciales.filter(elemento => elemento.turno === check.turnoLunesViernes)
+      const turnoEspecialSabado = turnosEspeciales.filter(elemento => elemento.turno === check.turnoSabados)
 
       if (!acc[usuarioId]) {
         acc[usuarioId] = {
-            numero_empleado: check.numero_empleado,
-            nombre: check.nombre,
-            fechaAlta: check.fechaAlta,
-            aniosLaborados: check.aniosLaborados,
-            diasVacacionesLey: check.diasVacacionesLey,
-            diasVacacionesRestantes: check.diasVacacionesRestantes,
-            diasEconomicosLey: check.diasEconomicosLey,
-            diasEconomicosRestantes: check.diasEconomicosRestantes,
-            puesto: check.puesto,
-            division: check.division,
-            departamento: check.departamento,
-            centroTrabajo: check.centroTrabajo,
-            claveEmpresa: check.claveEmpresa,
-            claveSucursal: check.claveSucursal,
-            claveDepartamento: check.claveDepartamento,
-            numeroEmpleadoJefe: check.numeroEmpleadoJefe,
-            estatus: check.estatus,
-            turnoLunesViernes: check.turnoLunesViernes,
-            turnoSabados: check.turnoSabados,
-            createdAt: check.createdAt,
-            updatedAt: check.updatedAt,
-            semanas: {}
+          numero_empleado: check.numero_empleado,
+          nombre: check.nombre,
+          fechaAlta: check.fechaAlta,
+          aniosLaborados: check.aniosLaborados,
+          diasVacacionesLey: check.diasVacacionesLey,
+          diasVacacionesRestantes: check.diasVacacionesRestantes,
+          diasEconomicosLey: check.diasEconomicosLey,
+          diasEconomicosRestantes: check.diasEconomicosRestantes,
+          puesto: check.puesto,
+          division: check.division,
+          departamento: check.departamento,
+          centroTrabajo: check.centroTrabajo,
+          claveEmpresa: check.claveEmpresa,
+          claveSucursal: check.claveSucursal,
+          claveDepartamento: check.claveDepartamento,
+          numeroEmpleadoJefe: check.numeroEmpleadoJefe,
+          estatus: check.estatus,
+          turnoLunesViernes: check.turnoLunesViernes,
+          turnoSabados: check.turnoSabados,
+          createdAt: check.createdAt,
+          updatedAt: check.updatedAt,
+          semanas: {}
         }
       }
 
@@ -66,38 +79,36 @@ export const obtenerChecks = async (req, res) => {
           miercoles: {},
           jueves: {},
           viernes: {},
-          sabado: {},
+          sabado: {}
         }
       }
 
-      if(check.fechaRegistro)
-      {
+      if (check.fechaRegistro) {
         const fechaRegistro = check.fechaRegistro
-        const diaSemana = dayjs(fechaRegistro).day() // 0 (Domingo) a 6 (Sábado)
+        const diaSemana = dayjs(fechaRegistro).day()
         const horaRegistro = check.horaRegistro
-        
-        //Chequeo si es retardo
+
         let horaTurno, sinTurno = false
-        if(diaSemana === 6){
-          if(!check.turnoSabados){
+        if (diaSemana === 6) {
+          if (!check.turnoSabados) {
             sinTurno = true
-          }else{
+          } else {
             horaTurno = parse(check.turnoSabados.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
           }
-        }else{
-          if(!check.turnoLunesViernes){
+        } else {
+          if (!check.turnoLunesViernes) {
             sinTurno = true
-          }else{
+          } else {
             horaTurno = parse(check.turnoLunesViernes.replace('TURNO ', '').split(" - ")[0], 'HH:mm', new Date())
           }
         }
-  
+
         const horaEntrada = parse(check.horaRegistro, 'HH:mm', new Date())
         let retardo = false
-        if(!sinTurno){
-           retardo = isBefore(horaTurno, horaEntrada)
+        if (!sinTurno) {
+          retardo = isBefore(horaTurno, horaEntrada)
         }
-  
+
         switch (diaSemana) {
           case 1:
             acc[usuarioId].semanas[semana].lunes = { fechaRegistro, horaRegistro, retardo, sinTurno }
@@ -121,66 +132,89 @@ export const obtenerChecks = async (req, res) => {
             break
         }
       }
-      
+
       acc[usuarioId].turnoEspecialSemana = turnoEspecialSemana[0]
       acc[usuarioId].turnoEspecialSabado = turnoEspecialSabado[0]
-      
+
       return acc
     }, {})
 
-    // Agregar solicitudes a los días correspondientes
-      todosSolicitudes.forEach((solicitud) => {
-        const usuarioId = solicitud.numero_empleado
-        const fechaSolicitud = solicitud.fechaDiaSolicitado
-        const semana = dayjs(fechaSolicitud).week()
-        const diaSemana = dayjs(fechaSolicitud).day() // 0 (Domingo) a 6 (Sábado)
-        //Si no existe usuario en arreglo lo crea
-        if (!resultados[usuarioId]) {
-          resultados[usuarioId] = {
-            numero_empleado: solicitud.numero_empleado,
-            nombre: solicitud.nombre,
-            fechaAlta: solicitud.fechaAlta,
-            aniosLaborados: solicitud.aniosLaborados,
-            diasVacacionesLey: solicitud.diasVacacionesLey,
-            diasVacacionesRestantes: solicitud.diasVacacionesRestantes,
-            diasEconomicosLey: solicitud.diasEconomicosLey,
-            diasEconomicosRestantes: solicitud.diasEconomicosRestantes,
-            puesto: solicitud.puesto,
-            division: solicitud.division,
-            departamento: solicitud.departamento,
-            centroTrabajo: solicitud.centroTrabajo,
-            claveSucursal: solicitud.claveSucursal,
-            numeroEmpleadoJefe: solicitud.numeroEmpleadoJefe,
-            estatus: solicitud.estatus,
-            turnoLunesViernes: solicitud.turnoLunesViernes,
-            turnoSabados: solicitud.turnoSabados,
-            createdAt: solicitud.createdAt,
-            updatedAt: solicitud.updatedAt,
-            semanas: {}
-          }
-        }
-        //Si no existe la semana lo crea
-        if (!resultados[usuarioId].semanas[semana]) {
-          resultados[usuarioId].semanas[semana] = {
+    // Agregar los días en el rango al resultado
+    Object.keys(resultados).forEach(usuarioId => {
+      const semanas = resultados[usuarioId].semanas
+      diasEnRango.forEach(dia => {
+        const semana = dayjs(dia.fecha).week()
+        const diaSemana = dayjs(dia.fecha).day()
+
+        if (!semanas[semana]) {
+          semanas[semana] = {
             lunes: {},
             martes: {},
             miercoles: {},
             jueves: {},
             viernes: {},
-            sabado: {},
+            sabado: {}
           }
         }
 
-        //Si no existe el dia lo crea
-        const dia = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][diaSemana]
-        if (!resultados[usuarioId].semanas[semana][dia]) {
-          resultados[usuarioId].semanas[semana][dia] = {}
+        const diaStr = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][diaSemana]
+        if (!semanas[semana][diaStr].fechaRegistro) {
+          semanas[semana][diaStr] = { fechaRegistro: dia.fecha }
         }
-        resultados[usuarioId].semanas[semana][dia].solicitud = solicitud
       })
+    })
+
+    // Agregar solicitudes a los días correspondientes
+    todosSolicitudes.forEach((solicitud) => {
+      const usuarioId = solicitud.numero_empleado
+      const fechaSolicitud = solicitud.fechaDiaSolicitado
+      const semana = dayjs(fechaSolicitud).week()
+      const diaSemana = dayjs(fechaSolicitud).day()
+
+      if (!resultados[usuarioId]) {
+        resultados[usuarioId] = {
+          numero_empleado: solicitud.numero_empleado,
+          nombre: solicitud.nombre,
+          fechaAlta: solicitud.fechaAlta,
+          aniosLaborados: solicitud.aniosLaborados,
+          diasVacacionesLey: solicitud.diasVacacionesLey,
+          diasVacacionesRestantes: solicitud.diasVacacionesRestantes,
+          diasEconomicosLey: solicitud.diasEconomicosLey,
+          diasEconomicosRestantes: solicitud.diasEconomicosRestantes,
+          puesto: solicitud.puesto,
+          division: solicitud.division,
+          departamento: solicitud.departamento,
+          centroTrabajo: solicitud.centroTrabajo,
+          claveSucursal: solicitud.claveSucursal,
+          numeroEmpleadoJefe: solicitud.numeroEmpleadoJefe,
+          estatus: solicitud.estatus,
+          turnoLunesViernes: solicitud.turnoLunesViernes,
+          turnoSabados: solicitud.turnoSabados,
+          createdAt: solicitud.createdAt,
+          updatedAt: solicitud.updatedAt,
+          semanas: {}
+        }
+      }
+
+      if (!resultados[usuarioId].semanas[semana]) {
+        resultados[usuarioId].semanas[semana] = {
+          lunes: {},
+          martes: {},
+          miercoles: {},
+          jueves: {},
+          viernes: {},
+          sabado: {}
+        }
+      }
+
+      const dia = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][diaSemana]
+      if (!resultados[usuarioId].semanas[semana][dia]) {
+        resultados[usuarioId].semanas[semana][dia] = {}
+      }
+      resultados[usuarioId].semanas[semana][dia].solicitud = solicitud
+    })
 
     const arrayResultados = Object.values(resultados)
-
     return res.json(arrayResultados)
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
@@ -216,13 +250,15 @@ const obtenerDiasEnRango = async (fechaInicio, fechaFin) => {
 
 const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
   try {
-    const todoschecks = await db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
-    const todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
-    const turnosEspeciales = await CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+    const [todoschecks, todosSolicitudes, turnosEspeciales] = await Promise.all([
+      db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
+      db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
+      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+    ])
 
     const usuariosMap = new Map()
 
-    // Procesar los cheques
+    // Procesar los checks
     todoschecks.forEach(check => {
       if (!usuariosMap.has(check.numero_empleado)) {
         usuariosMap.set(check.numero_empleado, {
@@ -333,16 +369,15 @@ const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
           }
         }
       })
-    })
 
-    // Convertir Map a Array y eliminar fechasProcesadas
-    const usuariosUnicos = Array.from(usuariosMap.values()).map(usuario => {
-      delete usuario.fechasProcesadas
-      return usuario
+      usuario.fechaDeFaltas = usuario.fechaFaltas.join(', ')
     })
-
-    return usuariosUnicos
+    
+    const usuariosConFaltas = Array.from(usuariosMap.values()).filter(usuario => usuario.faltas > 0)
+    
+    return usuariosConFaltas
   } catch (error) {
     throw error
   }
 }
+

@@ -1,6 +1,7 @@
 import dbPuestos from '../config/dbPuestos.js'
 import db from '../config/db.js'
 import CatalogoVacaciones from '../models/CatalogoVacaciones.js'
+import Sucursales from '../models/Sucursales.js'
 import Departamentos from '../models/Departamentos.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
 import Usuarios from '../models/Usuarios.js'
@@ -16,8 +17,9 @@ export const obtenerUsuariosContpaq = async () => {
     try {
         const empleados = await dbPuestos.query("SELECT * FROM empleados", { type: QueryTypes.ARRAY })
         const departamentos = await Departamentos.findAll()
+        const sucursales = await Sucursales.findAll()
         for (const element of empleados) {
-            await insertarUsuariosContpaq(element, departamentos)
+            await insertarUsuariosContpaq(element, sucursales, departamentos)
             continue
         }
         await actualizarEstatusUsuario(empleados)

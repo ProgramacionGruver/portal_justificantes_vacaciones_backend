@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
 import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
-import { queryChecks, queryChecksUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
+import { queryChecks, queryChecksEmpresa, queryChecksUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
 
 export const obtenerChecks = async (req, res) => {
   try {
@@ -381,3 +381,110 @@ const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
   }
 }
 
+export const obtenerFaltasContpaq = async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin, claveEmpresa, periodo} = req.body
+    const diasEnRango = await obtenerDiasEnRango(fechaInicio, fechaFin)
+    const usuarios = await procesarDatosContpaq(fechaInicio, fechaFin, diasEnRango, claveEmpresa, periodo)
+    return res.json(usuarios)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmpresa, periodo) => {
+  try {
+    const [todoschecks, todosSolicitudes, turnosEspeciales] = await Promise.all([
+      db.query(queryChecksEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
+      db.query(querySolicitudesJustificantesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
+      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+    ]);
+
+    const usuariosMap = new Map();
+
+    // Procesar los checks
+    todoschecks.forEach(check => {
+      if (!usuariosMap.has(check.numero_empleado)) {
+        usuariosMap.set(check.numero_empleado, {
+          numero_empleado: check.numero_empleado,
+          nombre: check.nombre,
+          puesto: check.puesto,
+          claveEmpresa: check.claveEmpresa,
+          claveSucursal: check.claveSucursal,
+          fechaFaltas: [],
+          fechasProcesadas: new Set(),
+          turnoLunesViernes: check.turnoLunesViernes,
+          turnoSabados: check.turnoSabados
+        });
+      }
+
+      const usuario = usuariosMap.get(check.numero_empleado);
+      const fechaRegistro = check.fechaRegistro;
+
+      if (fechaRegistro) {
+        usuario.fechasProcesadas.add(fechaRegistro);
+      }
+    });
+
+    // Procesar las solicitudes
+    todosSolicitudes.forEach(solicitud => {
+      const usuarioId = solicitud.numero_empleado;
+      const fechaSolicitud = solicitud.fechaDiaSolicitado;
+
+      if (!usuariosMap.has(usuarioId)) {
+        usuariosMap.set(usuarioId, {
+          numero_empleado: solicitud.numero_empleado,
+          nombre: solicitud.nombre,
+          puesto: solicitud.puesto,
+          claveEmpresa: solicitud.claveEmpresa,
+          claveSucursal: solicitud.claveSucursal,
+          fechaFaltas: [],
+          fechasProcesadas: new Set(),
+          turnoLunesViernes: solicitud.turnoLunesViernes,
+          turnoSabados: solicitud.turnoSabados
+        });
+      }
+
+      const usuario = usuariosMap.get(usuarioId);
+
+      if (fechaSolicitud) {
+        usuario.fechasProcesadas.add(fechaSolicitud);
+      }
+    });
+
+    // Agregar las fechas de faltas y manejar turnos especiales
+    const resultados = [];
+
+    usuariosMap.forEach(usuario => {
+      const tieneTurnoEspecialSemana = turnosEspeciales.some(turno => turno.turno === usuario.turnoLunesViernes);
+      const tieneTurnoEspecialSabado = turnosEspeciales.some(turno => turno.turno === usuario.turnoSabados);
+
+      diasEnRango.forEach(dia => {
+        const esSabado = dayjs(dia.fecha).day() === 6;
+
+        // Solo considerar como falta si no es un día con turno especial
+        const esDiaConTurnoEspecial = (esSabado && tieneTurnoEspecialSabado) || (!esSabado && tieneTurnoEspecialSemana);
+
+        if (!esDiaConTurnoEspecial && !usuario.fechasProcesadas.has(dia.fecha)) {
+          resultados.push({
+            numero_empleado: usuario.numero_empleado,
+            nombre: usuario.nombre,
+            puesto: usuario.puesto,
+            claveEmpresa: usuario.claveEmpresa,
+            claveSucursal: usuario.claveSucursal,
+            idperiodo: periodo,
+            idtipoincidencia: 15,
+            idtarjetaincapacidad: 0,
+            idtcontrolvacaciones: 0,
+            valor: 1,
+            fecha: dia.fecha
+          });
+        }
+      });
+    });
+
+    return resultados;
+  } catch (error) {
+    throw error;
+  }
+};

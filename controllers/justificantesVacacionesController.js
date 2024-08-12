@@ -1,5 +1,5 @@
 import db from '../config/db.js'
-import { QueryTypes, Op } from 'sequelize'
+import { QueryTypes, Op, Sequelize} from 'sequelize'
 import Usuarios from '../models/Usuarios.js'
 import Empresas from '../models/Empresas.js'
 import Sucursales from '../models/Sucursales.js'
@@ -285,10 +285,19 @@ export const obtenerTodasSolicitudes = async (req, res) => {
   try {
     const { fechaInicio, fechaFin } = req.body
 
-    const fechaI = new Date(fechaInicio)
-    const fechaF = new Date(fechaFin)
+    const fechaInicioStr = dayjs(fechaInicio).format('YYYY-MM-DD')
+    const fechaFinStr = dayjs(fechaFin).format('YYYY-MM-DD')
 
-    const todasSolicitudes = await Solicitudes.findAll({
+    const todasSolicitudes = await Solicitudes.findAll({ where: {
+      [Op.and]: [
+        Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+          [Op.gte]: fechaInicioStr
+        }),
+        Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+          [Op.lte]: fechaFinStr
+        })
+      ]
+    },
       include: [
         Usuarios,
         CatalogoTipoSolicitudes,
@@ -310,12 +319,7 @@ export const obtenerTodasSolicitudes = async (req, res) => {
       order: [['idSolicitud', 'DESC']],
     })
 
-    const solicitudesFiltradas = todasSolicitudes.filter(solicitud => {
-      const fechaCreacion = new Date(solicitud.createdAt)
-      return fechaCreacion >= fechaI && fechaCreacion <= fechaF
-    })
-
-    return res.json(solicitudesFiltradas)
+    return res.json(todasSolicitudes)
   } catch (error) {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }

@@ -283,6 +283,10 @@ export const obtenerProrrogasPorEmpleado = async (req, res) => {
 
 export const obtenerTodasSolicitudes = async (req, res) => {
   try {
+    const { fechaInicio, fechaFin } = req.body
+
+    const fechaI = new Date(fechaInicio)
+    const fechaF = new Date(fechaFin)
 
     const todasSolicitudes = await Solicitudes.findAll({
       include: [
@@ -306,7 +310,12 @@ export const obtenerTodasSolicitudes = async (req, res) => {
       order: [['idSolicitud', 'DESC']],
     })
 
-    return res.json(todasSolicitudes)
+    const solicitudesFiltradas = todasSolicitudes.filter(solicitud => {
+      const fechaCreacion = new Date(solicitud.createdAt)
+      return fechaCreacion >= fechaI && fechaCreacion <= fechaF
+    })
+
+    return res.json(solicitudesFiltradas)
   } catch (error) {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }

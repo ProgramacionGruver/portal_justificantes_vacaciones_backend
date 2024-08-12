@@ -4,7 +4,8 @@ import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
 import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
-import { queryChecks, queryChecksEmpresa, queryChecksUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
+import { queryChecks, queryChecksEmpresa, queryChecksUsuario, queryidUsuariosContpaq, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
+import Empresas from '../models/Empresas.js'
 
 export const obtenerChecks = async (req, res) => {
   try {
@@ -394,12 +395,14 @@ export const obtenerFaltasContpaq = async (req, res) => {
 
 const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmpresa, periodo) => {
   try {
-    const [todoschecks, todosSolicitudes, turnosEspeciales] = await Promise.all([
+    const [todoschecks, todosSolicitudes, turnosEspeciales, empresa] = await Promise.all([
       db.query(queryChecksEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       db.query(querySolicitudesJustificantesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
-      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } }),
+      Empresas.findOne({where:{ claveEmpresa }})
     ]);
-
+    
+    const usuarios = await db.query(queryidUsuariosContpaq(claveEmpresa, empresa.bdContpaq), { type: QueryTypes.SELECT })
     const usuariosMap = new Map();
 
     // Procesar los checks
@@ -407,6 +410,8 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
       if (!usuariosMap.has(check.numero_empleado)) {
         usuariosMap.set(check.numero_empleado, {
           numero_empleado: check.numero_empleado,
+          idempleado: usuarios.find(user => parseInt(user.codigoempleado) === check.numero_empleado).idempleado,
+          baseDatos: usuarios.find(user => parseInt(user.codigoempleado) === check.numero_empleado).bd,
           nombre: check.nombre,
           puesto: check.puesto,
           claveEmpresa: check.claveEmpresa,
@@ -434,6 +439,8 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
       if (!usuariosMap.has(usuarioId)) {
         usuariosMap.set(usuarioId, {
           numero_empleado: solicitud.numero_empleado,
+          idempleado: usuarios.find(user => parseInt(user.codigoempleado) === solicitud.numero_empleado).idempleado,
+          baseDatos: usuarios.find(user => parseInt(user.codigoempleado) === solicitud.numero_empleado).bd,
           nombre: solicitud.nombre,
           puesto: solicitud.puesto,
           claveEmpresa: solicitud.claveEmpresa,
@@ -468,6 +475,8 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
         if (!esDiaConTurnoEspecial && !usuario.fechasProcesadas.has(dia.fecha)) {
           resultados.push({
             numero_empleado: usuario.numero_empleado,
+            idempleado: usuarios.find(user => parseInt(user.codigoempleado) === usuario.numero_empleado).idempleado,
+            baseDatos: usuarios.find(user => parseInt(user.codigoempleado) === usuario.numero_empleado).bd,
             nombre: usuario.nombre,
             puesto: usuario.puesto,
             claveEmpresa: usuario.claveEmpresa,

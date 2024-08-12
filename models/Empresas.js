@@ -17,6 +17,10 @@ const Empresas = db.define('empresas', {
         type: DataTypes.STRING,
         allowNull: true,
         unique: true
+    },
+    bdContpaq: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
     
 },

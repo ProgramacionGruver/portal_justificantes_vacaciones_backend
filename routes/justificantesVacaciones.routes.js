@@ -17,7 +17,7 @@ router.get('/obtenerDetalleVacacionesDiasEconomicos/:numero_empleado', obtenerDe
 router.get('/obtenerDetalleEmpleadoYJefeDirecto/:numero_empleado', obtenerDetalleEmpleadoYJefeDirecto)
 router.get('/obtenerSolicitudesPorEmpleado/:numero_empleado', obtenerSolicitudesPorEmpleado)
 router.get('/obtenerProrrogasPorEmpleado/:numero_empleado', obtenerProrrogasPorEmpleado)
-router.get('/obtenerTodasSolicitudes', obtenerTodasSolicitudes)
+router.post('/obtenerTodasSolicitudes', obtenerTodasSolicitudes)
 router.get('/obtenerSolicitudPorFolio/:folio', obtenerSolicitudPorFolio)
 router.get('/obtenerDetalleUsuario/:numero_empleado', obtenerDetalleUsuario)
 

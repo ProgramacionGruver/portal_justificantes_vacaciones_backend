@@ -378,3 +378,21 @@ LEFT JOIN
       AND solicitudes.numero_empleado = ${numero_empleado}
  `
 }
+
+export const queryidUsuariosContpaq = (claveEmpresa, baseDatos) => {
+  if(claveEmpresa === 'MB'){
+    return `
+        SELECT idempleado, codigoempleado, '${baseDatos}2020' AS bd
+        FROM [${baseDatos}2020].[dbo].nom10001
+        UNION
+        SELECT idempleado, codigoempleado, '${baseDatos}2024' AS bd
+        FROM [${baseDatos}2024].[dbo].nom10001
+    `
+  }else{
+    return `
+        SELECT idempleado, codigoempleado, '${baseDatos}' AS bd
+        FROM [${baseDatos}].[dbo].nom10001
+    `
+  }
+  
+}

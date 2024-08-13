@@ -403,7 +403,7 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
     ]);
     
     const usuarios = await db.query(queryidUsuariosContpaq(claveEmpresa, empresa.bdContpaq), { type: QueryTypes.SELECT })
-    const usuariosMap = new Map();
+    const usuariosMap = new Map()
 
     // Procesar los checks
     todoschecks.forEach(check => {
@@ -420,21 +420,21 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
           fechasProcesadas: new Set(),
           turnoLunesViernes: check.turnoLunesViernes,
           turnoSabados: check.turnoSabados
-        });
+        })
       }
 
-      const usuario = usuariosMap.get(check.numero_empleado);
-      const fechaRegistro = check.fechaRegistro;
+      const usuario = usuariosMap.get(check.numero_empleado)
+      const fechaRegistro = check.fechaRegistro
 
       if (fechaRegistro) {
-        usuario.fechasProcesadas.add(fechaRegistro);
+        usuario.fechasProcesadas.add(fechaRegistro)
       }
     });
 
     // Procesar las solicitudes
     todosSolicitudes.forEach(solicitud => {
-      const usuarioId = solicitud.numero_empleado;
-      const fechaSolicitud = solicitud.fechaDiaSolicitado;
+      const usuarioId = solicitud.numero_empleado
+      const fechaSolicitud = solicitud.fechaDiaSolicitado
 
       if (!usuariosMap.has(usuarioId)) {
         usuariosMap.set(usuarioId, {
@@ -449,28 +449,28 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
           fechasProcesadas: new Set(),
           turnoLunesViernes: solicitud.turnoLunesViernes,
           turnoSabados: solicitud.turnoSabados
-        });
+        })
       }
 
-      const usuario = usuariosMap.get(usuarioId);
+      const usuario = usuariosMap.get(usuarioId)
 
       if (fechaSolicitud) {
-        usuario.fechasProcesadas.add(fechaSolicitud);
+        usuario.fechasProcesadas.add(fechaSolicitud)
       }
-    });
+    })
 
     // Agregar las fechas de faltas y manejar turnos especiales
-    const resultados = [];
+    const resultados = []
 
     usuariosMap.forEach(usuario => {
-      const tieneTurnoEspecialSemana = turnosEspeciales.some(turno => turno.turno === usuario.turnoLunesViernes);
-      const tieneTurnoEspecialSabado = turnosEspeciales.some(turno => turno.turno === usuario.turnoSabados);
+      const tieneTurnoEspecialSemana = turnosEspeciales.some(turno => turno.turno === usuario.turnoLunesViernes)
+      const tieneTurnoEspecialSabado = turnosEspeciales.some(turno => turno.turno === usuario.turnoSabados)
 
       diasEnRango.forEach(dia => {
-        const esSabado = dayjs(dia.fecha).day() === 6;
+        const esSabado = dayjs(dia.fecha).day() === 6
 
         // Solo considerar como falta si no es un día con turno especial
-        const esDiaConTurnoEspecial = (esSabado && tieneTurnoEspecialSabado) || (!esSabado && tieneTurnoEspecialSemana);
+        const esDiaConTurnoEspecial = (esSabado && tieneTurnoEspecialSabado) || (!esSabado && tieneTurnoEspecialSemana)
 
         if (!esDiaConTurnoEspecial && !usuario.fechasProcesadas.has(dia.fecha)) {
           resultados.push({
@@ -486,14 +486,30 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
             idtarjetaincapacidad: 0,
             idtcontrolvacaciones: 0,
             valor: 1,
-            fecha: dia.fecha
-          });
+            fecha: formatDateTime(dia.fecha)
+          })
         }
-      });
-    });
+      })
+    })
 
-    return resultados;
+    return resultados
   } catch (error) {
-    throw error;
+    throw error
   }
-};
+}
+
+function formatDateTime(fecha) {
+  const date = new Date(fecha);
+  
+  // Ajustar las partes de la fecha manualmente para evitar problemas de zonas horarias
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Los meses empiezan en 0, por eso se suma 1
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  
+  // Siempre establecer las horas, minutos y segundos en "00:00:00"
+  const hours = '00';
+  const minutes = '00';
+  const seconds = '00';
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}

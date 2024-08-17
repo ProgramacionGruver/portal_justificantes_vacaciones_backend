@@ -486,7 +486,8 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
             idtarjetaincapacidad: 0,
             idtcontrolvacaciones: 0,
             valor: 1,
-            fecha: formatDateTime(dia.fecha)
+            fecha: formatDateTime(dia.fecha),
+            fechaFalta: dia.fecha
           })
         }
       })
@@ -498,18 +499,40 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
   }
 }
 
-function formatDateTime(fecha) {
-  const date = new Date(fecha);
+const formatDateTime = (fecha) => {
+  const date = new Date(fecha)
   
-  // Ajustar las partes de la fecha manualmente para evitar problemas de zonas horarias
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Los meses empiezan en 0, por eso se suma 1
-  const day = String(date.getUTCDate()).padStart(2, '0');
+  // Obtener partes de la fecha
+  const year = date.getUTCFullYear()
+  const month = date.getUTCMonth() + 1 // Los meses empiezan en 0, por eso se suma 1
+  let day = date.getUTCDate()
   
+  // Lógica para ajustar el día
+  if (day >= 1 && day <= 15) {
+    day = day + 15 // Si el día está entre 1 y 15, suma 15 días
+  } else if (day >= 16) {
+    const siguienteMes = month + 1 > 12 ? 1 : month + 1
+    const siguienteAnio = month + 1 > 12 ? year + 1 : year
+
+    if (day === 31) {
+      day = 15 // Si el día es 31, debe ser 15 del siguiente mes
+    } else {
+      day = day - 15 // Si el día está entre 16 y 30, resta 15 días
+    }
+
+    // Actualizar mes y año si es necesario
+    date.setUTCFullYear(siguienteAnio)
+    date.setUTCMonth(siguienteMes - 1) // Restamos 1 porque los meses empiezan en 0
+  }
+
   // Siempre establecer las horas, minutos y segundos en "00:00:00"
-  const hours = '00';
-  const minutes = '00';
-  const seconds = '00';
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  const hours = '00'
+  const minutes = '00'
+  const seconds = '00'
+
+  // Ajustar partes de la fecha al formato deseado
+  const formattedMonth = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const formattedDay = String(day).padStart(2, '0')
+
+  return `${date.getUTCFullYear()}-${formattedMonth}-${formattedDay} ${hours}:${minutes}:${seconds}`
 }

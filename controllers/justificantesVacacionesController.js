@@ -7,12 +7,15 @@ import Departamentos from '../models/Departamentos.js'
 import CatalogoEstatus from '../models/CatalogoEstatus.js'
 import CatalogoMotivos from '../models/CatalogoMotivos.js'
 import CatalogoTipoSolicitudes from '../models/CatalogoTipoSolicitudes.js'
-import { queryObtenerEmpleado } from '../constant/querys.js'
+import { queryidEventos, queryObtenerEmpleado } from '../constant/querys.js'
 import Solicitudes from '../models/Solicitudes.js'
 import SolicitudDetalle from '../models/SolicitudDetalle.js'
 import AutorizacionesSolicitudes from '../models/AutorizacionesSolicitudes.js'
 import DepartamentosSucursales from '../models/DepartamentosSucursales.js'
 import dayjs from 'dayjs'
+import { URL_JUSTIFICANTES_VACACIONES } from '../constant/estatusConst.js'
+import { encryptarObjeto } from "../helpers/jsencrypt.js"
+
 
 export const obtenerUsuarios = async (req, res) => {
   try {
@@ -1638,6 +1641,81 @@ export const finalizarSolicitudProrroga = async (req, res) => {
 
   } catch (error) {
     await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const obtenerAutorizacionesPorEmpleado = async (req, res) => {
+  try {
+    const { numero_empleado, fechaInicio, fechaFin } = req.body
+
+    const fechaInicioStr = dayjs(fechaInicio).format('YYYY-MM-DD')
+    const fechaFinStr = dayjs(fechaFin).format('YYYY-MM-DD')
+
+    const todasSolicitudes = await Solicitudes.findAll({
+      include: [
+        {
+          model: SolicitudDetalle,
+          required: true,
+          include: [
+            {
+              model: AutorizacionesSolicitudes,
+              required: true,
+              where: {
+                numeroEmpleadoAutoriza: numero_empleado
+              },
+              include: [CatalogoEstatus],
+            },
+            CatalogoEstatus,
+          ],
+        },
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+      ],
+      where: {
+        [Op.and]: [
+          Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+            [Op.gte]: fechaInicioStr
+          }),
+          Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+            [Op.lte]: fechaFinStr
+          })
+        ]
+      },
+      order: [['idSolicitud', 'DESC']],
+    })
+
+    if (todasSolicitudes.length === 0) {
+      return res.json([])
+    }
+    
+    const folios = todasSolicitudes.map(solicitud => solicitud.folio)
+    
+    if (folios.length === 0) {
+      return res.json(todasSolicitudes)
+    }
+    
+    const autorizaciones = await db.query(queryidEventos(folios), { type: QueryTypes.SELECT })
+    
+    for (const solicitud of todasSolicitudes) {
+      const autorizacion = autorizaciones.find(auth => auth.nombre.includes(solicitud.folio))
+      if (autorizacion) {
+        const dataCifrada = await encryptarObjeto({
+          idEvento: autorizacion.idEvento,
+          tipoForm: 2011
+        })
+    
+        const url = `${URL_JUSTIFICANTES_VACACIONES}/${dataCifrada}`
+        solicitud.dataValues.url = url
+      }
+    }
+    
+    return res.json(todasSolicitudes)
+  } catch (error) {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }

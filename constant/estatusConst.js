@@ -11,3 +11,5 @@ export const Correo_Errores = {
     html: '',
     adjuntos: ''
 }
+
+export const URL_JUSTIFICANTES_VACACIONES = 'https://www.gruver.com.mx/portal_formularios/#/loginJustificantesVacaciones'

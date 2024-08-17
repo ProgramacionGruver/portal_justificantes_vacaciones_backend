@@ -396,3 +396,12 @@ export const queryidUsuariosContpaq = (claveEmpresa, baseDatos) => {
   }
   
 }
+
+export const queryidEventos = (folios) => {
+  const conditions = folios.map(folio => `nombre LIKE '%${folio}%'`).join(' OR ')
+  return `
+      SELECT idEvento, nombre
+      FROM [portal_formularios].[dbo].eventoFormularios
+      WHERE ${conditions}
+  `
+}

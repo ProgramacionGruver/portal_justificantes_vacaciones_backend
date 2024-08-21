@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
 import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
-import { queryChecks, queryChecksEmpresa, queryChecksUsuario, queryidUsuariosContpaq, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
+import { queryChecks, queryChecksEmpresa, queryChecksUsuario, queryidUsuariosContpaq, queryIncapacidades, queryIncapacidadesEmpresa, queryIncapacidadesUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
 import Empresas from '../models/Empresas.js'
 
 export const obtenerChecks = async (req, res) => {
@@ -24,6 +24,13 @@ export const obtenerChecks = async (req, res) => {
       todosSolicitudes = await db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
     } else {
       todosSolicitudes = await db.query(querySolicitudesJustificantesUsuario(fechaInicio, fechaFin, numero_empleado), { type: QueryTypes.SELECT })
+    }
+
+    let todosIncapacidades
+    if (!numero_empleado) {
+      todosIncapacidades = await db.query(queryIncapacidades(fechaInicio, fechaFin), { type: QueryTypes.SELECT })
+    } else {
+      todosIncapacidades = await db.query(queryIncapacidadesUsuario(fechaInicio, fechaFin, numero_empleado), { type: QueryTypes.SELECT })
     }
 
     const turnosEspeciales = await CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
@@ -215,6 +222,56 @@ export const obtenerChecks = async (req, res) => {
       resultados[usuarioId].semanas[semana][dia].solicitud = solicitud
     })
 
+      // Agregar incapacidades a los días correspondientes
+      todosIncapacidades.forEach((incapacidad) => {
+        const usuarioId = incapacidad.numero_empleado
+        const fechaIncapacidad = incapacidad.fechaIncapacidad
+        const semana = dayjs(fechaIncapacidad).week()
+        const diaSemana = dayjs(fechaIncapacidad).day()
+  
+        if (!resultados[usuarioId]) {
+          resultados[usuarioId] = {
+            numero_empleado: incapacidad.numero_empleado,
+            nombre: incapacidad.nombre,
+            fechaAlta: incapacidad.fechaAlta,
+            aniosLaborados: incapacidad.aniosLaborados,
+            diasVacacionesLey: incapacidad.diasVacacionesLey,
+            diasVacacionesRestantes: incapacidad.diasVacacionesRestantes,
+            diasEconomicosLey: incapacidad.diasEconomicosLey,
+            diasEconomicosRestantes: incapacidad.diasEconomicosRestantes,
+            puesto: incapacidad.puesto,
+            division: incapacidad.division,
+            departamento: incapacidad.departamento,
+            centroTrabajo: incapacidad.centroTrabajo,
+            claveSucursal: incapacidad.claveSucursal,
+            numeroEmpleadoJefe: incapacidad.numeroEmpleadoJefe,
+            estatus: incapacidad.estatus,
+            turnoLunesViernes: incapacidad.turnoLunesViernes,
+            turnoSabados: incapacidad.turnoSabados,
+            createdAt: incapacidad.createdAt,
+            updatedAt: incapacidad.updatedAt,
+            semanas: {}
+          }
+        }
+  
+        if (!resultados[usuarioId].semanas[semana]) {
+          resultados[usuarioId].semanas[semana] = {
+            lunes: {},
+            martes: {},
+            miercoles: {},
+            jueves: {},
+            viernes: {},
+            sabado: {}
+          }
+        }
+  
+        const dia = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'][diaSemana]
+        if (!resultados[usuarioId].semanas[semana][dia]) {
+          resultados[usuarioId].semanas[semana][dia] = {}
+        }
+        resultados[usuarioId].semanas[semana][dia].incapacidad = incapacidad
+      })
+
     const arrayResultados = Object.values(resultados)
     return res.json(arrayResultados)
   } catch (error) {
@@ -251,9 +308,10 @@ const obtenerDiasEnRango = async (fechaInicio, fechaFin) => {
 
 const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
   try {
-    const [todoschecks, todosSolicitudes, turnosEspeciales] = await Promise.all([
+    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales] = await Promise.all([
       db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
       db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
+      db.query(queryIncapacidades(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
       CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
     ])
 
@@ -349,6 +407,52 @@ const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
       }
     })
 
+     // Procesar las incapacidades
+     todosIncapacidades.forEach(incapacidad => {
+      const usuarioId = incapacidad.numero_empleado
+      const fechaIncapacidad = incapacidad.fechaIncapacidad
+
+      if (!usuariosMap.has(usuarioId)) {
+        usuariosMap.set(usuarioId, {
+          numero_empleado: incapacidad.numero_empleado,
+          nombre: incapacidad.nombre,
+          fechaAlta: incapacidad.fechaAlta,
+          aniosLaborados: incapacidad.aniosLaborados,
+          diasVacacionesLey: incapacidad.diasVacacionesLey,
+          diasVacacionesRestantes: incapacidad.diasVacacionesRestantes,
+          diasEconomicosLey: incapacidad.diasEconomicosLey,
+          diasEconomicosRestantes: incapacidad.diasEconomicosRestantes,
+          puesto: incapacidad.puesto,
+          division: incapacidad.division,
+          departamento: incapacidad.departamento,
+          centroTrabajo: incapacidad.centroTrabajo,
+          claveEmpresa: incapacidad.claveEmpresa,
+          claveSucursal: incapacidad.claveSucursal,
+          claveDepartamento: incapacidad.claveDepartamento,
+          numeroEmpleadoJefe: incapacidad.numeroEmpleadoJefe,
+          estatus: incapacidad.estatus,
+          turnoLunesViernes: incapacidad.turnoLunesViernes,
+          turnoSabados: incapacidad.turnoSabados,
+          createdAt: incapacidad.createdAt,
+          updatedAt: incapacidad.updatedAt,
+          faltas: 0,
+          asistencias: 0,
+          justificantes: 0,
+          fechaFaltas: [],
+          fechaAsistencias: [],
+          fechasProcesadas: new Set()
+        })
+      }
+
+      const usuario = usuariosMap.get(usuarioId)
+
+      if (fechaIncapacidad && !usuario.fechasProcesadas.has(fechaIncapacidad)) {
+        usuario.asistencias += 1
+        usuario.fechaAsistencias.push(fechaIncapacidad)
+        usuario.fechasProcesadas.add(fechaIncapacidad)
+      }
+    })
+
     // Agregar las fechas de faltas y manejar turnos especiales
     usuariosMap.forEach(usuario => {
       const tieneTurnoEspecialSemana = turnosEspeciales.some(turno => turno.turno === usuario.turnoLunesViernes)
@@ -395,9 +499,10 @@ export const obtenerFaltasContpaq = async (req, res) => {
 
 const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmpresa, periodo) => {
   try {
-    const [todoschecks, todosSolicitudes, turnosEspeciales, empresa] = await Promise.all([
+    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales, empresa] = await Promise.all([
       db.query(queryChecksEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       db.query(querySolicitudesJustificantesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
+      db.query(queryIncapacidadesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } }),
       Empresas.findOne({where:{ claveEmpresa }})
     ]);
@@ -456,6 +561,34 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
 
       if (fechaSolicitud) {
         usuario.fechasProcesadas.add(fechaSolicitud)
+      }
+    })
+
+    // Procesar las incapacidades
+    todosIncapacidades.forEach(incapacidad => {
+      const usuarioId = incapacidad.numero_empleado
+      const fechaIncapacidad = incapacidad.fechaIncapacidad
+
+      if (!usuariosMap.has(usuarioId)) {
+        usuariosMap.set(usuarioId, {
+          numero_empleado: incapacidad.numero_empleado,
+          idempleado: usuarios.find(user => parseInt(user.codigoempleado) === incapacidad.numero_empleado).idempleado,
+          baseDatos: usuarios.find(user => parseInt(user.codigoempleado) === incapacidad.numero_empleado).bd,
+          nombre: incapacidad.nombre,
+          puesto: incapacidad.puesto,
+          claveEmpresa: incapacidad.claveEmpresa,
+          claveSucursal: incapacidad.claveSucursal,
+          fechaFaltas: [],
+          fechasProcesadas: new Set(),
+          turnoLunesViernes: incapacidad.turnoLunesViernes,
+          turnoSabados: incapacidad.turnoSabados
+        })
+      }
+
+      const usuario = usuariosMap.get(usuarioId)
+
+      if (fechaIncapacidad) {
+        usuario.fechasProcesadas.add(fechaIncapacidad)
       }
     })
 

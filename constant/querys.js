@@ -1,6 +1,6 @@
 export const queryUsuarios = {
     obtenerUsuariosProgramadores: "SELECT numero_empleado FROM [portal_sistemas].[dbo].[usuarios] WHERE (puesto LIKE 'PROGRAMADOR%' OR puesto LIKE 'AUXILIAR DE SISTEMAS') AND estatus = 1",
-  }
+}
 
 export const queryChecks = (fechaInicio, fechaFin) => {
   return `
@@ -32,6 +32,74 @@ export const queryChecks = (fechaInicio, fechaFin) => {
       LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
       AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
       WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1
+      ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
+ `
+}
+
+export const queryChecksEmpresa = (fechaInicio, fechaFin, claveEmpresa) => {
+  return `
+      SELECT
+      usuarios.numero_empleado,
+      usuarios.nombre,
+      usuarios.fechaAlta,
+      usuarios.aniosLaborados,
+      usuarios.diasVacacionesLey,
+      usuarios.diasVacacionesRestantes,
+      usuarios.diasEconomicosLey,
+      usuarios.diasEconomicosRestantes,
+      usuarios.puesto,
+      usuarios.division,
+      usuarios.departamento,
+      usuarios.centroTrabajo,
+			usuarios.claveEmpresa,
+      usuarios.claveSucursal,
+			usuarios.claveDepartamento,
+      usuarios.numeroEmpleadoJefe,
+      usuarios.estatus,
+      usuarios.turnoLunesViernes,
+      usuarios.turnoSabados,
+      usuarios.createdAt,
+      usuarios.updatedAt,
+      checks.fechaRegistro,
+      checks.horaRegistro
+      FROM [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios 
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
+      AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
+      WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1 AND usuarios.claveEmpresa = '${claveEmpresa}'
+      ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
+ `
+}
+
+export const queryChecksUsuario = (fechaInicio, fechaFin, numero_empleado) => {
+  return `
+      SELECT
+      usuarios.numero_empleado,
+      usuarios.nombre,
+      usuarios.fechaAlta,
+      usuarios.aniosLaborados,
+      usuarios.diasVacacionesLey,
+      usuarios.diasVacacionesRestantes,
+      usuarios.diasEconomicosLey,
+      usuarios.diasEconomicosRestantes,
+      usuarios.puesto,
+      usuarios.division,
+      usuarios.departamento,
+      usuarios.centroTrabajo,
+			usuarios.claveEmpresa,
+      usuarios.claveSucursal,
+			usuarios.claveDepartamento,
+      usuarios.numeroEmpleadoJefe,
+      usuarios.estatus,
+      usuarios.turnoLunesViernes,
+      usuarios.turnoSabados,
+      usuarios.createdAt,
+      usuarios.updatedAt,
+      checks.fechaRegistro,
+      checks.horaRegistro
+      FROM [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios 
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
+      AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
+      WHERE usuarios.numero_empleado = ${numero_empleado}
       ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
  `
 }
@@ -114,40 +182,6 @@ LEFT JOIN
  `
 }
 
-export const queryChecksEmpresa = (fechaInicio, fechaFin, claveEmpresa) => {
-  return `
-      SELECT
-      usuarios.numero_empleado,
-      usuarios.nombre,
-      usuarios.fechaAlta,
-      usuarios.aniosLaborados,
-      usuarios.diasVacacionesLey,
-      usuarios.diasVacacionesRestantes,
-      usuarios.diasEconomicosLey,
-      usuarios.diasEconomicosRestantes,
-      usuarios.puesto,
-      usuarios.division,
-      usuarios.departamento,
-      usuarios.centroTrabajo,
-			usuarios.claveEmpresa,
-      usuarios.claveSucursal,
-			usuarios.claveDepartamento,
-      usuarios.numeroEmpleadoJefe,
-      usuarios.estatus,
-      usuarios.turnoLunesViernes,
-      usuarios.turnoSabados,
-      usuarios.createdAt,
-      usuarios.updatedAt,
-      checks.fechaRegistro,
-      checks.horaRegistro
-      FROM [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios 
-      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
-      AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
-      WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1 AND usuarios.claveEmpresa = '${claveEmpresa}'
-      ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
- `
-}
-
 export const querySolicitudesJustificantesEmpresa = (fechaInicio, fechaFin, claveEmpresa) => {
   return `
       SELECT
@@ -224,79 +258,6 @@ LEFT JOIN
       WHERE solicitudDetalle.fechaDiaSolicitado BETWEEN '${fechaInicio}' AND '${fechaFin}'
       AND solicitudDetalle.idEstatusSolicitud = 2
       AND solicitudes.claveEmpresa = '${claveEmpresa}'
- `
-}
-
-export const queryObtenerEmpleado = (numero_empleado) => {
-  return `
-  SELECT [idUsuario]
-      ,[numero_empleado]
-      ,[nombre]
-      ,[usuario]
-      ,[correo]
-      ,[puesto]
-      ,[contrasena]
-      ,[fechaAlta]
-      ,[idPuesto]
-      ,[departamento]
-      ,[centroTrabajo]
-      ,[idDepartamentoSucursal]
-      ,[siglasCentroTrabajo]
-      ,[numeroEmpleadoJefe]
-      ,[fechaNacimiento]
-      ,[rfc]
-      ,[curp]
-      ,[sexo]
-      ,[lugarNacimiento]
-      ,[estadoCivil]
-      ,[direccion]
-      ,[codigoPostal]
-      ,[ciudad]
-      ,[estado]
-      ,[telefono]
-      ,[division]
-      ,[estatus]
-      ,[createdAt]
-      ,[updatedAt]
-      ,[sueldo]
-      ,[turnoLunesViernes]
-      ,[turnoSabados]
-  FROM [portal_sistemas].[dbo].[usuarios] 
-  WHERE numero_empleado = ${numero_empleado}
-  `
-}
-
-export const queryChecksUsuario = (fechaInicio, fechaFin, numero_empleado) => {
-  return `
-      SELECT
-      usuarios.numero_empleado,
-      usuarios.nombre,
-      usuarios.fechaAlta,
-      usuarios.aniosLaborados,
-      usuarios.diasVacacionesLey,
-      usuarios.diasVacacionesRestantes,
-      usuarios.diasEconomicosLey,
-      usuarios.diasEconomicosRestantes,
-      usuarios.puesto,
-      usuarios.division,
-      usuarios.departamento,
-      usuarios.centroTrabajo,
-			usuarios.claveEmpresa,
-      usuarios.claveSucursal,
-			usuarios.claveDepartamento,
-      usuarios.numeroEmpleadoJefe,
-      usuarios.estatus,
-      usuarios.turnoLunesViernes,
-      usuarios.turnoSabados,
-      usuarios.createdAt,
-      usuarios.updatedAt,
-      checks.fechaRegistro,
-      checks.horaRegistro
-      FROM [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios 
-      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[checksDiarios] AS checks ON usuarios.numero_empleado = checks.numero_empleado 
-      AND	checks.fechaRegistro BETWEEN '${fechaInicio}' AND '${fechaFin}'
-      WHERE usuarios.numero_empleado = ${numero_empleado}
-      ORDER BY usuarios.numero_empleado, checks.fechaRegistro ASC, checks.horaRegistro
  `
 }
 
@@ -377,6 +338,156 @@ LEFT JOIN
       AND solicitudDetalle.idEstatusSolicitud = 2
       AND solicitudes.numero_empleado = ${numero_empleado}
  `
+}
+
+export const queryIncapacidades = (fechaInicio, fechaFin) => {
+  return `
+      SELECT
+      usuarios.numero_empleado,
+      usuarios.nombre,
+      usuarios.fechaAlta,
+      usuarios.aniosLaborados,
+      usuarios.diasVacacionesLey,
+      usuarios.diasVacacionesRestantes,
+      usuarios.diasEconomicosLey,
+      usuarios.diasEconomicosRestantes,
+      usuarios.puesto,
+      usuarios.division,
+      usuarios.departamento,
+      usuarios.centroTrabajo,
+			usuarios.claveEmpresa,
+      usuarios.claveSucursal,
+			usuarios.claveDepartamento,
+      usuarios.numeroEmpleadoJefe,
+      usuarios.estatus,
+      usuarios.turnoLunesViernes,
+      usuarios.turnoSabados,
+      incapacidad.fechaIncapacidad,
+      incapacidad.motivo,
+      incapacidad.descripcionMotivo,
+      incapacidad.editedBy,
+      incapacidad.createdAt,
+      incapacidad.updatedAt,
+      incapacidad.folio
+      FROM [portal_justificantes_vacaciones].[dbo].[incapacidades] AS incapacidad
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios ON usuarios.numero_empleado = incapacidad.numero_empleado 
+      AND	incapacidad.fechaIncapacidad BETWEEN '${fechaInicio}' AND '${fechaFin}'
+      WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1
+      ORDER BY usuarios.numero_empleado, incapacidad.fechaIncapacidad ASC
+ `
+}
+
+export const queryIncapacidadesEmpresa = (fechaInicio, fechaFin, claveEmpresa) => {
+  return `
+      SELECT
+      usuarios.numero_empleado,
+      usuarios.nombre,
+      usuarios.fechaAlta,
+      usuarios.aniosLaborados,
+      usuarios.diasVacacionesLey,
+      usuarios.diasVacacionesRestantes,
+      usuarios.diasEconomicosLey,
+      usuarios.diasEconomicosRestantes,
+      usuarios.puesto,
+      usuarios.division,
+      usuarios.departamento,
+      usuarios.centroTrabajo,
+			usuarios.claveEmpresa,
+      usuarios.claveSucursal,
+			usuarios.claveDepartamento,
+      usuarios.numeroEmpleadoJefe,
+      usuarios.estatus,
+      usuarios.turnoLunesViernes,
+      usuarios.turnoSabados,
+      incapacidad.fechaIncapacidad,
+      incapacidad.motivo,
+      incapacidad.descripcionMotivo,
+      incapacidad.editedBy,
+      incapacidad.createdAt,
+      incapacidad.updatedAt,
+      incapacidad.folio
+      FROM [portal_justificantes_vacaciones].[dbo].[incapacidades] AS incapacidad
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios ON usuarios.numero_empleado = incapacidad.numero_empleado 
+      AND	incapacidad.fechaIncapacidad BETWEEN '${fechaInicio}' AND '${fechaFin}'
+       WHERE usuarios.numero_empleado > 2 AND usuarios.estatus = 1 AND usuarios.claveEmpresa = '${claveEmpresa}'
+      ORDER BY usuarios.numero_empleado, incapacidad.fechaIncapacidad ASC
+ `
+}
+
+export const queryIncapacidadesUsuario = (fechaInicio, fechaFin, numero_empleado) => {
+  return `
+      SELECT
+      usuarios.numero_empleado,
+      usuarios.nombre,
+      usuarios.fechaAlta,
+      usuarios.aniosLaborados,
+      usuarios.diasVacacionesLey,
+      usuarios.diasVacacionesRestantes,
+      usuarios.diasEconomicosLey,
+      usuarios.diasEconomicosRestantes,
+      usuarios.puesto,
+      usuarios.division,
+      usuarios.departamento,
+      usuarios.centroTrabajo,
+			usuarios.claveEmpresa,
+      usuarios.claveSucursal,
+			usuarios.claveDepartamento,
+      usuarios.numeroEmpleadoJefe,
+      usuarios.estatus,
+      usuarios.turnoLunesViernes,
+      usuarios.turnoSabados,
+      incapacidad.fechaIncapacidad,
+      incapacidad.motivo,
+      incapacidad.descripcionMotivo,
+      incapacidad.editedBy,
+      incapacidad.createdAt,
+      incapacidad.updatedAt,
+      incapacidad.folio
+      FROM [portal_justificantes_vacaciones].[dbo].[incapacidades] AS incapacidad
+      LEFT JOIN [portal_justificantes_vacaciones].[dbo].[usuarios] AS usuarios ON usuarios.numero_empleado = incapacidad.numero_empleado 
+      AND	incapacidad.fechaIncapacidad BETWEEN '${fechaInicio}' AND '${fechaFin}'
+      WHERE usuarios.estatus = 1 AND usuarios.numero_empleado = ${numero_empleado}
+      ORDER BY usuarios.numero_empleado, incapacidad.fechaIncapacidad ASC
+ `
+}
+
+export const queryObtenerEmpleado = (numero_empleado) => {
+  return `
+  SELECT [idUsuario]
+      ,[numero_empleado]
+      ,[nombre]
+      ,[usuario]
+      ,[correo]
+      ,[puesto]
+      ,[contrasena]
+      ,[fechaAlta]
+      ,[idPuesto]
+      ,[departamento]
+      ,[centroTrabajo]
+      ,[idDepartamentoSucursal]
+      ,[siglasCentroTrabajo]
+      ,[numeroEmpleadoJefe]
+      ,[fechaNacimiento]
+      ,[rfc]
+      ,[curp]
+      ,[sexo]
+      ,[lugarNacimiento]
+      ,[estadoCivil]
+      ,[direccion]
+      ,[codigoPostal]
+      ,[ciudad]
+      ,[estado]
+      ,[telefono]
+      ,[division]
+      ,[estatus]
+      ,[createdAt]
+      ,[updatedAt]
+      ,[sueldo]
+      ,[turnoLunesViernes]
+      ,[turnoSabados]
+  FROM [portal_sistemas].[dbo].[usuarios] 
+  WHERE numero_empleado = ${numero_empleado}
+  `
 }
 
 export const queryidUsuariosContpaq = (claveEmpresa, baseDatos) => {

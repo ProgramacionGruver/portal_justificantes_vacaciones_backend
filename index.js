@@ -10,6 +10,7 @@ import incapacidadesRoutes from './routes/incapacidades.routes.js'
 import { obtenerUsuariosContpaq, agregarPermisosUsuarios, agregarPermisosProrroga } from './helpers/obtenerUsuariosContpaq.js'
 import { manejoRutinaObtenerTurnoDiario } from './helpers/manejoRutinas.js'
 import { menejoRutinaObtenerTurnoEmpleado } from './helpers/manejoRutinas.js'
+import { obtenerAutorizacionesPendientes } from './controllers/justificantesVacacionesController.js'
 
 const app = express()
 const port = 4022
@@ -39,6 +40,9 @@ cron.schedule('0 1 * * *', async() => {
     await agregarPermisosProrroga()
 })
 
+cron.schedule('0 1 2,17 * *', async () => {
+    await obtenerAutorizacionesPendientes()
+})
 
 app.use('/justificantesVacaciones/api', justificantesVacacionesRoutes)
 app.use('/justificantesVacaciones/api', checksRoutes)

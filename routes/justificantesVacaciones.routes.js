@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado} from '../controllers/justificantesVacacionesController.js'
+import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado, obtenerAutorizacionesPendientes} from '../controllers/justificantesVacacionesController.js'
 
 const router = express.Router()
 
@@ -21,6 +21,7 @@ router.post('/obtenerTodasSolicitudes', obtenerTodasSolicitudes)
 router.get('/obtenerSolicitudPorFolio/:folio', obtenerSolicitudPorFolio)
 router.get('/obtenerDetalleUsuario/:numero_empleado', obtenerDetalleUsuario)
 router.post('/obtenerAutorizacionesPorEmpleado', obtenerAutorizacionesPorEmpleado)
+router.post('/obtenerAutorizacionesPendientes', obtenerAutorizacionesPendientes)
 
 router.post('/solicitarAusenciasYRetardos', solicitarAusenciasYRetardos)
 router.post('/solicitarVacaciones', solicitarVacaciones)

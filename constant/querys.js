@@ -516,3 +516,11 @@ export const queryidEventos = (folios) => {
       WHERE ${conditions}
   `
 }
+
+export const queryGerenteAdministrativo = (claveSucursal) => {
+  return `
+  SELECT administraSucursal
+  FROM [portal_sistemas].[dbo].[sucursales] 
+  WHERE abreviacion = '${claveSucursal}'
+  `
+}

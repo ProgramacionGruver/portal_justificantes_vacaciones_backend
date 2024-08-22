@@ -1,4 +1,5 @@
 import db from '../config/db.js'
+import dayjs from 'dayjs'
 import { QueryTypes, Op, Sequelize} from 'sequelize'
 import Usuarios from '../models/Usuarios.js'
 import Empresas from '../models/Empresas.js'
@@ -7,15 +8,16 @@ import Departamentos from '../models/Departamentos.js'
 import CatalogoEstatus from '../models/CatalogoEstatus.js'
 import CatalogoMotivos from '../models/CatalogoMotivos.js'
 import CatalogoTipoSolicitudes from '../models/CatalogoTipoSolicitudes.js'
-import { queryidEventos, queryObtenerEmpleado } from '../constant/querys.js'
 import Solicitudes from '../models/Solicitudes.js'
 import SolicitudDetalle from '../models/SolicitudDetalle.js'
 import AutorizacionesSolicitudes from '../models/AutorizacionesSolicitudes.js'
 import DepartamentosSucursales from '../models/DepartamentosSucursales.js'
-import dayjs from 'dayjs'
 import { URL_JUSTIFICANTES_VACACIONES } from '../constant/estatusConst.js'
 import { encryptarObjeto } from "../helpers/jsencrypt.js"
-
+import { enviarCorreo } from '../constant/envioCorreo.js'
+import { mensajeCorreoSolicitudesPendientes } from '../constant/mensajeCorreo.js'
+import { queryGerenteAdministrativo, queryidEventos, queryObtenerEmpleado } from '../constant/querys.js'
+import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const obtenerUsuarios = async (req, res) => {
   try {
@@ -1716,6 +1718,116 @@ export const obtenerAutorizacionesPorEmpleado = async (req, res) => {
     
     return res.json(todasSolicitudes)
   } catch (error) {
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const obtenerAutorizacionesPendientes = async (req, res) => {
+  try {
+    const hoy = dayjs()
+    let fechaInicio, fechaFin
+
+    if (hoy.date() === 2) {
+      const mesAnterior = hoy.subtract(1, 'month')
+      fechaInicio = mesAnterior.date(16).format('YYYY-MM-DD')
+      fechaFin = mesAnterior.endOf('month').format('YYYY-MM-DD')
+    } else if (hoy.date() === 17) {
+      fechaInicio = hoy.date(1).format('YYYY-MM-DD')
+      fechaFin = hoy.date(15).format('YYYY-MM-DD')
+    }
+  
+    const fechaInicioStr = dayjs(fechaInicio).format('YYYY-MM-DD')
+    const fechaFinStr = dayjs(fechaFin).format('YYYY-MM-DD')
+
+    const todasSolicitudes = await Solicitudes.findAll({
+      include: [
+        {
+          model: SolicitudDetalle,
+          required: true,
+          where: {
+            idEstatusSolicitud: 1,
+          },
+          include: [
+            {
+              model: AutorizacionesSolicitudes,
+              required: true,
+              include: [CatalogoEstatus],
+            },
+            CatalogoEstatus,
+          ],
+        },
+        Usuarios,
+        CatalogoTipoSolicitudes,
+        Empresas,
+        Sucursales,
+        Departamentos,
+        CatalogoMotivos,
+      ],
+      where: {
+        [Op.and]: [
+          Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+            [Op.gte]: fechaInicioStr,
+          }),
+          Sequelize.where(Sequelize.literal(`CAST(solicitudes.createdAt AS DATE)`), {
+            [Op.lte]: fechaFinStr,
+          }),
+        ],
+      },
+      order: [['idSolicitud', 'DESC']],
+    })
+
+    if (todasSolicitudes.length === 0) {
+      return res.json([])
+    }
+
+    const solicitudesAgrupadas = {}
+
+    for (const solicitud of todasSolicitudes) {
+      for (const detalle of solicitud.solicitud_detalles) {
+        for (const autorizacion of detalle.autorizaciones_solicitudes) {
+          const { numeroEmpleadoAutoriza, nombreEmpleadoAutoriza } = autorizacion
+          const { claveSucursal } = solicitud
+          const key = `${numeroEmpleadoAutoriza}-${claveSucursal}`
+
+          if (!solicitudesAgrupadas[key]) {
+            solicitudesAgrupadas[key] = {
+              numero_empleado: numeroEmpleadoAutoriza,
+              nombre: nombreEmpleadoAutoriza,
+              solicitudesPendientes: 0,
+              claveSucursal: claveSucursal,
+            }
+          }
+
+          solicitudesAgrupadas[key].solicitudesPendientes++
+        }
+      }
+    }
+
+     const resultadoFinal = Object.values(solicitudesAgrupadas)
+ 
+      let detalleJefe, detalleGerente
+      for (const item of resultadoFinal) {
+        const { numero_empleado, claveSucursal} = item
+
+        // Obtener información del jefe
+        const [jefe] = await db.query(queryObtenerEmpleado(numero_empleado), { type: QueryTypes.SELECT })
+        detalleJefe = jefe;
+
+        // Obtener información del gerente administrativo
+        const [gerenteAdm] = await db.query(queryGerenteAdministrativo(claveSucursal), { type: QueryTypes.SELECT })
+
+        const [gerente] = await db.query(queryObtenerEmpleado(gerenteAdm.administraSucursal), { type: QueryTypes.SELECT })
+        detalleGerente = gerente
+
+        await enviarCorreo([detalleJefe?.correo], [detalleGerente?.correo], [],'Recordatorio: Justificantes Pendientes por Autorizar', mensajeCorreoSolicitudesPendientes(item), [])
+
+        continue
+      }
+ 
+     return res.json(resultadoFinal)
+    
+  } catch (error) {
+    await enviarCorreoErrores(`[Error general correos pendientes / [${error.message}]`)
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }

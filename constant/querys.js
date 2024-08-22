@@ -524,3 +524,11 @@ export const queryGerenteAdministrativo = (claveSucursal) => {
   WHERE abreviacion = '${claveSucursal}'
   `
 }
+
+export const querySeguimientoRH = (claveSucursal) => {
+  return `
+  SELECT seguimientoRH
+  FROM [portal_sistemas].[dbo].[sucursales] 
+  WHERE abreviacion = '${claveSucursal}'
+  `
+}

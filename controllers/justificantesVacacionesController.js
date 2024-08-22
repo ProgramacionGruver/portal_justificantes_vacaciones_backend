@@ -16,7 +16,7 @@ import { URL_JUSTIFICANTES_VACACIONES } from '../constant/estatusConst.js'
 import { encryptarObjeto } from "../helpers/jsencrypt.js"
 import { enviarCorreo } from '../constant/envioCorreo.js'
 import { mensajeCorreoSolicitudesPendientes } from '../constant/mensajeCorreo.js'
-import { queryGerenteAdministrativo, queryidEventos, queryObtenerEmpleado } from '../constant/querys.js'
+import { queryGerenteAdministrativo, queryidEventos, queryObtenerEmpleado, querySeguimientoRH } from '../constant/querys.js'
 import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const obtenerUsuarios = async (req, res) => {
@@ -203,7 +203,21 @@ export const obtenerDetalleEmpleadoYJefeDirecto = async (req, res) => {
       detalleJefe = jefe || null
     }
 
-    return res.json({ detalleEmpleado, detalleJefe })
+    let detalleGerente
+    if (numeroEmpleadoJefe === 1028) {
+      if(detalleEmpleado.siglasCentroTrabajo === 'EXVE' || detalleEmpleado.siglasCentroTrabajo === 'CEEXVE'){
+        const [rh] = await db.query(querySeguimientoRH('EXVE'), { type: QueryTypes.SELECT })
+        const [gerente] = await db.query(queryObtenerEmpleado(rh.seguimientoRH), { type: QueryTypes.SELECT })
+        detalleGerente = gerente
+      }else{
+        // Obtener información del gerente administrativo
+        const [gerenteAdm] = await db.query(queryGerenteAdministrativo(detalleEmpleado.siglasCentroTrabajo), { type: QueryTypes.SELECT })
+        const [gerente] = await db.query(queryObtenerEmpleado(gerenteAdm.administraSucursal), { type: QueryTypes.SELECT })
+        detalleGerente = gerente
+      }
+    }
+
+    return res.json({ detalleEmpleado, detalleJefe, detalleGerente })
 
   } catch (error) {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })

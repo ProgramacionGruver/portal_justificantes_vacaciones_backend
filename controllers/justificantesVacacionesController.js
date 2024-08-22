@@ -1831,3 +1831,85 @@ export const obtenerAutorizacionesPendientes = async (req, res) => {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }
+
+export const rechazarSolicitudesPendientes = async (req, res) => {
+  try {
+    const hoy = dayjs()
+    let fechaInicio, fechaFin
+
+    if (hoy.date() === 3) {
+      const mesAnterior = hoy.subtract(1, 'month')
+      fechaInicio = mesAnterior.date(16).format('YYYY-MM-DD')
+      fechaFin = mesAnterior.endOf('month').format('YYYY-MM-DD')
+    } else if (hoy.date() === 18) {
+      fechaInicio = hoy.date(1).format('YYYY-MM-DD')
+      fechaFin = hoy.date(15).format('YYYY-MM-DD')
+    }
+  
+    const fechaInicioStr = dayjs(fechaInicio).format('YYYY-MM-DD')
+    const fechaFinStr = dayjs(fechaFin).format('YYYY-MM-DD')
+    const todasSolicitudes = await SolicitudDetalle.findAll({
+      where: {
+        [Op.and]: [
+          { idEstatusSolicitud: 1 },
+          Sequelize.where(
+            Sequelize.literal(`CAST(solicitud_detalle.fechaDiaSolicitado AS DATE)`),
+            {
+              [Op.gte]: fechaInicioStr,
+            }
+          ),
+          Sequelize.where(
+            Sequelize.literal(`CAST(solicitud_detalle.fechaDiaSolicitado AS DATE)`),
+            {
+              [Op.lte]: fechaFinStr,
+            }
+          ),
+        ],
+      },
+      include: [
+        {
+          model: AutorizacionesSolicitudes,
+          required: true,
+          include: [CatalogoEstatus],
+        },
+        CatalogoEstatus,
+      ],
+    })
+    
+
+    if (todasSolicitudes.length === 0) {
+      return res.json([])
+    }
+
+    const idsSolicitudDetalle = todasSolicitudes.map(solicitud => solicitud.idSolicitudDetalle)
+
+    await SolicitudDetalle.update(
+      { idEstatusSolicitud: 3 },
+      {
+        where: {
+          idSolicitudDetalle: { [Op.in]: idsSolicitudDetalle },
+        },
+      }
+    );
+
+    await AutorizacionesSolicitudes.update(
+      {
+        numeroEmpleadoAutoriza: 0,
+        nombreEmpleadoAutoriza: "Programación",
+        idEstatusAutorizacion: 3,
+        comentario: "Rechazado por falta de autorización dentro del periodo",
+      },
+      {
+        where: {
+          idSolicitudDetalle: { [Op.in]: idsSolicitudDetalle },
+        },
+      }
+    )
+
+    return res.json("Actualización completada correctamente")
+
+  } catch (error) {
+    await enviarCorreoErrores(`[Error al rechazar correos pendientes / [${error.message}]`)
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}

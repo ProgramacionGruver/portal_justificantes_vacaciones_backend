@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado, obtenerAutorizacionesPendientes, rechazarSolicitudesPendientes} from '../controllers/justificantesVacacionesController.js'
+import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado, obtenerAutorizacionesPendientes, rechazarSolicitudesPendientes, solicitarCapacitaciones, finalizarSolicitudCapacitaciones} from '../controllers/justificantesVacacionesController.js'
 
 const router = express.Router()
 
@@ -31,6 +31,7 @@ router.post('/solicitarDiasGanados', solicitarDiasGanados)
 router.post('/solicitarVacacionesVencidas', solicitarVacacionesVencidas)
 router.post('/solicitarSabados5s', solicitarSabados5s)
 router.post('/solicitarProrroga', solicitarProrroga)
+router.post('/solicitarCapacitaciones', solicitarCapacitaciones)
 router.post('/actualizarAutorizaciones', actualizarAutorizaciones)
 router.post('/finalizarSolicitudAusenciasYRetardos/:folio', finalizarSolicitudAusenciasYRetardos)
 router.post('/finalizarSolicitudVacaciones/:folio', finalizarSolicitudVacaciones)
@@ -39,5 +40,6 @@ router.post('/finalizarSolicitudDiasGanados/:folio', finalizarSolicitudDiasGanad
 router.post('/finalizarSolicitudVacacionesVencidas/:folio', finalizarSolicitudVacacionesVencidas)
 router.post('/finalizarSolicitudSabados5s/:folio', finalizarSolicitudSabados5s)
 router.post('/finalizarSolicitudProrroga/:folio', finalizarSolicitudProrroga)
+router.post('/finalizarSolicitudCapacitaciones/:folio', finalizarSolicitudCapacitaciones)
 
 export default router

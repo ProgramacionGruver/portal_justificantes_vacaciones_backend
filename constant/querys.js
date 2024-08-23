@@ -532,3 +532,33 @@ export const querySeguimientoRH = (claveSucursal) => {
   WHERE abreviacion = '${claveSucursal}'
   `
 }
+
+export const queryGratificacionesMecanicos = (objGratificaciones) => {
+  const createdAt = new Date().toISOString()
+  const updatedAt = new Date().toISOString()
+  return `
+    INSERT INTO [portal_comisiones].[dbo].[gratificaciones] 
+    (idMecanico, tipoGratificacion, monto, fechaGratificacion, claveEmpresa, claveSucursal, usuario, mecanico, sucursal, createdAt, updatedAt)
+    VALUES (
+      '${objGratificaciones.idMecanico}',
+      '${objGratificaciones.tipoGratificacion}',
+      ${objGratificaciones.monto},
+      '${objGratificaciones.fechaGratificacion}',
+      '${objGratificaciones.claveEmpresa}',
+      '${objGratificaciones.claveSucursal}',
+      '${objGratificaciones.usuario}',
+      '${objGratificaciones.mecanico}',
+      '${objGratificaciones.sucursal}',
+      '${createdAt}', 
+      '${updatedAt}'
+    );
+  `
+}
+
+export const queryMecanicos = (numero_empleado) => {
+  return `
+    SELECT *
+    FROM [CAMIONES].[dbo].[mecanicos]
+    WHERE no_empleado = '${numero_empleado}';
+  `
+}

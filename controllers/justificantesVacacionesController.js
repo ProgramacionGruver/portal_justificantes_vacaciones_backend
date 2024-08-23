@@ -16,7 +16,7 @@ import { URL_JUSTIFICANTES_VACACIONES } from '../constant/estatusConst.js'
 import { encryptarObjeto } from "../helpers/jsencrypt.js"
 import { enviarCorreo } from '../constant/envioCorreo.js'
 import { mensajeCorreoSolicitudesPendientes } from '../constant/mensajeCorreo.js'
-import { queryGerenteAdministrativo, queryidEventos, queryObtenerEmpleado, querySeguimientoRH } from '../constant/querys.js'
+import { queryGerenteAdministrativo, queryGratificacionesMecanicos, queryidEventos, queryMecanicos, queryObtenerEmpleado, querySeguimientoRH } from '../constant/querys.js'
 import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const obtenerUsuarios = async (req, res) => {
@@ -1197,12 +1197,29 @@ export const finalizarSolicitudVacaciones = async (req, res) => {
       const algunaRechazada = autorizaciones.some(auth => auth.idEstatusAutorizacion === RECHAZADO)
       return todasAutorizadas && !algunaRechazada
     })
+    
+    const mecanico = await db.query(queryMecanicos(solicitud.numero_empleado), { type: QueryTypes.SELECT })
 
     // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si está en la lista de autorizados o no
     for (const detalle of solicitud.solicitud_detalles) {
       const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
         ? AUTORIZADO
         : RECHAZADO
+
+      if(nuevoEstatus === AUTORIZADO && mecanico.length > 0){
+          const objGratificaciones = {
+            idMecanico: solicitud.numero_empleado,
+            tipoGratificacion: 'vacaciones',
+            monto: 1,
+            fechaGratificacion: detalle.fechaDiaSolicitado,
+            claveEmpresa: solicitud.claveEmpresa,
+            claveSucursal: solicitud.claveSucursal,
+            usuario: 'programacion',
+            mecanico: solicitud.usuario.nombre.toUpperCase(),
+            sucursal: solicitud.sucursale.nombreSucursal
+          }
+          await db.query(queryGratificacionesMecanicos(objGratificaciones), { type: QueryTypes.INSERT })
+        }
 
       await SolicitudDetalle.update(
         { idEstatusSolicitud: nuevoEstatus },
@@ -1789,11 +1806,28 @@ export const finalizarSolicitudCapacitaciones= async (req, res) => {
       return todasAutorizadas && !algunaRechazada
     })
 
+    const mecanico = await db.query(queryMecanicos(solicitud.numero_empleado), { type: QueryTypes.SELECT })
+
     // Actualizar el idEstatusSolicitud de cada solicitud_detalle según si se autorizó o no
     for (const detalle of solicitud.solicitud_detalles) {
       const nuevoEstatus = detallesAutorizados.some(autorizado => autorizado.idSolicitudDetalle === detalle.idSolicitudDetalle)
         ? AUTORIZADO
         : RECHAZADO
+
+      if(nuevoEstatus === AUTORIZADO && mecanico.length > 0){
+        const objGratificaciones = {
+          idMecanico: solicitud.numero_empleado,
+          tipoGratificacion: 'capacitacion',
+          monto: 1,
+          fechaGratificacion: detalle.fechaDiaSolicitado,
+          claveEmpresa: solicitud.claveEmpresa,
+          claveSucursal: solicitud.claveSucursal,
+          usuario: 'programacion',
+          mecanico: solicitud.usuario.nombre.toUpperCase(),
+          sucursal: solicitud.sucursale.nombreSucursal
+        }
+        await db.query(queryGratificacionesMecanicos(objGratificaciones), { type: QueryTypes.INSERT })
+      }
 
       await SolicitudDetalle.update(
         { idEstatusSolicitud: nuevoEstatus },

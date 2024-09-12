@@ -102,6 +102,10 @@ const Usuarios = db.define('usuarios', {
         type: DataTypes.INTEGER,
         allowNull: true,
     },
+    numeroSeguroSocial: {
+        type: DataTypes.STRING,
+        allowNull: true,
+    },
 },
 {
     sequelize,

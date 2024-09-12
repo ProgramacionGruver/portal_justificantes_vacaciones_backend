@@ -31,14 +31,15 @@ export const obtenerUsuariosContpaq = async () => {
 
 export const agregarPermisosUsuarios = async () => {
     try {
-        const empleados = await dbPuestos.query("SELECT * FROM empleados", { type: QueryTypes.ARRAY })
-        const usuariosRegistrados = await Usuarios.findAll()
-        const usuarios = empleados.filter(empleado => 
-            !usuariosRegistrados.some(usuario => usuario.numero_empleado === parseInt(empleado.numero))
+        const permisos = await dbPuestos.query("SELECT * FROM [portal_sistemas].[dbo].permisosPortales", { type: QueryTypes.ARRAY })
+        const usuariosRegistrados = await dbPuestos.query("SELECT * FROM [portal_sistemas].[dbo].usuarios AS usuarios WHERE usuarios.estatus = 1", { type: QueryTypes.ARRAY })
+
+        const usuarios = usuariosRegistrados.filter(empleado => 
+            !permisos.some(permiso => permiso.idUsuario === empleado.idUsuario && permiso.idPortal === 26)
           )
         const empleadosObj = {
             empleadosArray: usuarios.map(empleado => ({
-              numero_empleado: empleado.numero,
+              numero_empleado: empleado.numero_empleado,
               idPortal: 26,
               editedBy: 'programacion'
             }))

@@ -41,13 +41,17 @@ const Incapacidades = db.define('incapacidades', {
         type: DataTypes.STRING,
         allowNull: true,
     },
-    editedBy: {
+    urlDocumento: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
     },
     folio: {
         type: DataTypes.STRING,
         allowNull: false,
+    },
+    editedBy: {
+        type: DataTypes.STRING,
+        allowNull: true,
     }
 },
     {

@@ -26,7 +26,8 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, sucursales, departam
                         aniosLaborados: aniosEnEmpresa,
                         division: nuevoUsuario.division,
                         claveEmpresa: claveEmpresa,
-                        claveDepartamento: claveDepartamento
+                        claveDepartamento: claveDepartamento,
+                        numeroSeguroSocial: nuevoUsuario.IMSS
                     })
                 
         }else{
@@ -45,7 +46,8 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, sucursales, departam
                     numeroEmpleadoJefe: nuevoUsuario.numero_jefe,
                     division: nuevoUsuario.division,
                     claveEmpresa: claveEmpresa,
-                    claveDepartamento: claveDepartamento
+                    claveDepartamento: claveDepartamento,
+                    numeroSeguroSocial: nuevoUsuario.IMSS
                 })
         }
     } catch (error) {

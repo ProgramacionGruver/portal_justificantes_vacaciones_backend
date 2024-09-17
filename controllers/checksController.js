@@ -1,4 +1,4 @@
-import { QueryTypes } from 'sequelize'
+import { QueryTypes, Op } from 'sequelize'
 import db from '../config/db.js'
 import dayjs from 'dayjs'
 import { parse, isBefore } from 'date-fns'
@@ -6,6 +6,7 @@ import weekOfYear from 'dayjs/plugin/weekOfYear.js'
 import CatalogoTurnos from '../models/CatalogoTurnos.js'
 import { queryChecks, queryChecksEmpresa, queryChecksUsuario, queryidUsuariosContpaq, queryIncapacidades, queryIncapacidadesEmpresa, queryIncapacidadesUsuario, querySolicitudesJustificantes, querySolicitudesJustificantesEmpresa, querySolicitudesJustificantesUsuario } from '../constant/querys.js'
 import Empresas from '../models/Empresas.js'
+import DiasFeriados from '../models/DiasFeriados.js'
 
 export const obtenerChecks = async (req, res) => {
   try {
@@ -33,6 +34,8 @@ export const obtenerChecks = async (req, res) => {
       todosIncapacidades = await db.query(queryIncapacidadesUsuario(fechaInicio, fechaFin, numero_empleado), { type: QueryTypes.SELECT })
     }
 
+    const diasFeriados = await DiasFeriados.findAll({where: {fecha: {[Op.between]: [fechaInicio, fechaFin]}}})
+    
     const turnosEspeciales = await CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
 
     const checksMap = new Map()
@@ -169,6 +172,11 @@ export const obtenerChecks = async (req, res) => {
         if (!semanas[semana][diaStr].fechaRegistro) {
           semanas[semana][diaStr] = { fechaRegistro: dia.fecha }
         }
+
+        const diaFeriado = diasFeriados.find((feriado) => dayjs(feriado.fecha).isSame(dayjs(dia.fecha), 'day'))
+        if (diaFeriado) {
+          semanas[semana][diaStr].diaFeriado = diaFeriado
+        }
       })
     })
 
@@ -273,6 +281,7 @@ export const obtenerChecks = async (req, res) => {
       })
 
     const arrayResultados = Object.values(resultados)
+    
     return res.json(arrayResultados)
   } catch (error) {
     return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
@@ -308,11 +317,12 @@ const obtenerDiasEnRango = async (fechaInicio, fechaFin) => {
 
 const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
   try {
-    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales] = await Promise.all([
+    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales, diasFeriados] = await Promise.all([
       db.query(queryChecks(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
       db.query(querySolicitudesJustificantes(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
       db.query(queryIncapacidades(fechaInicio, fechaFin), { type: QueryTypes.SELECT }),
-      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } })
+      CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } }),
+      DiasFeriados.findAll({where: {fecha: {[Op.between]: [fechaInicio, fechaFin],},},})
     ])
 
     const usuariosMap = new Map()
@@ -460,6 +470,9 @@ const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
 
       diasEnRango.forEach(dia => {
         const esSabado = dayjs(dia.fecha).day() === 6
+        const esDiaFeriado = diasFeriados.some(
+          (feriado) => feriado.fecha === dia.fecha
+        )
 
         if (tieneTurnoEspecialSemana || (tieneTurnoEspecialSabado && esSabado)) {
           if (!usuario.fechaAsistencias.includes(dia.fecha) && !usuario.fechasProcesadas.has(dia.fecha)) {
@@ -467,11 +480,15 @@ const procesarDatos = async (fechaInicio, fechaFin, diasEnRango) => {
             usuario.fechaAsistencias.push(dia.fecha)
             usuario.fechasProcesadas.add(dia.fecha)
           }
-        } else {
+        } else if (!esDiaFeriado) {
           if (!usuario.fechaAsistencias.includes(dia.fecha)) {
-            usuario.faltas += 1
+            usuario.faltas += 1;
             usuario.fechaFaltas.push(dia.fecha)
           }
+        } else if (esDiaFeriado) {
+          // Registrar la asistencia si es día feriado
+          usuario.asistencias += 1
+          usuario.fechaAsistencias.push(dia.fecha)
         }
       })
 
@@ -499,12 +516,13 @@ export const obtenerFaltasContpaq = async (req, res) => {
 
 const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmpresa, periodo) => {
   try {
-    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales, empresa] = await Promise.all([
+    const [todoschecks, todosSolicitudes, todosIncapacidades, turnosEspeciales, empresa, diasFeriados] = await Promise.all([
       db.query(queryChecksEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       db.query(querySolicitudesJustificantesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       db.query(queryIncapacidadesEmpresa(fechaInicio, fechaFin, claveEmpresa), { type: QueryTypes.SELECT }),
       CatalogoTurnos.findAll({ where: { turnoEspecial: 1 } }),
-      Empresas.findOne({where:{ claveEmpresa }})
+      Empresas.findOne({where:{ claveEmpresa }}),
+      DiasFeriados.findAll({where: {fecha: {[Op.between]: [fechaInicio, fechaFin],},},})
     ]);
     
     const usuarios = await db.query(queryidUsuariosContpaq(claveEmpresa, empresa.bdContpaq), { type: QueryTypes.SELECT })
@@ -601,11 +619,12 @@ const procesarDatosContpaq = async (fechaInicio, fechaFin, diasEnRango, claveEmp
 
       diasEnRango.forEach(dia => {
         const esSabado = dayjs(dia.fecha).day() === 6
+        const esDiaFeriado = diasFeriados.some((feriado) => feriado.fecha === dia.fecha)
 
         // Solo considerar como falta si no es un día con turno especial
         const esDiaConTurnoEspecial = (esSabado && tieneTurnoEspecialSabado) || (!esSabado && tieneTurnoEspecialSemana)
 
-        if (!esDiaConTurnoEspecial && !usuario.fechasProcesadas.has(dia.fecha)) {
+        if (!esDiaConTurnoEspecial && !usuario.fechasProcesadas.has(dia.fecha) && !esDiaFeriado) {
           resultados.push({
             numero_empleado: usuario.numero_empleado,
             idempleado: usuarios.find(user => parseInt(user.codigoempleado) === usuario.numero_empleado).idempleado,

@@ -2,6 +2,7 @@ import Usuarios from '../models/Usuarios.js'
 import { formatName } from './formatearString.js'
 import { ESTATUS_USUARIO } from '../constant/estatusConst.js'
 import moment from 'moment-timezone'
+import { enviarCorreoErrores } from '../helpers/correosErrores.js'
 
 export const insertarUsuariosContpaq = async (nuevoUsuario, sucursales, departamentos) => {
     const { numero } = nuevoUsuario
@@ -51,7 +52,7 @@ export const insertarUsuariosContpaq = async (nuevoUsuario, sucursales, departam
                 })
         }
     } catch (error) {
-        console.log(error)
+        await enviarCorreoErrores(`[Error insertarUsuariosContpaq / [${error.message}]`)
     }
 }
 
@@ -85,6 +86,6 @@ export const actualizarEstatusUsuario = async (nuevoUsuario) => {
         }
         return
     } catch (error) {
-        console.log(error)
+        await enviarCorreoErrores(`[Error actualizarEstatusUsuario / [${error.message}]`)
     }
 }

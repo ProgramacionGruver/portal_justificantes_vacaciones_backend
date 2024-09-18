@@ -12,6 +12,7 @@ import { enviarCorreo } from './enviarCorreo.js'
 import { mensajeCorreoMesVacaciones } from '../constant/mensajeCorreo.js'
 import { queryObtenerEmpleado } from '../constant/querys.js'
 import moment from 'moment-timezone'
+import { enviarCorreoErrores } from './correosErrores.js'
 
 export const obtenerUsuariosContpaq = async () => {
     try {
@@ -25,7 +26,7 @@ export const obtenerUsuariosContpaq = async () => {
         await actualizarEstatusUsuario(empleados)
         return
     } catch ( error ) {
-        console.log( error )
+        await enviarCorreoErrores(`[Error obtenerUsuariosContpaq / [${error.message}]`)
     }
 }
 
@@ -47,7 +48,7 @@ export const agregarPermisosUsuarios = async () => {
         const { data } = await apiSistemas.post('/permisos/masivo/justificantes', empleadosObj)
         return
     } catch ( error ) {
-        console.log( error )
+        await enviarCorreoErrores(`[Error agregarPermisosUsuarios / [${error.message}]`)
     }
 }
 
@@ -90,9 +91,9 @@ export const agregarPermisosProrroga = async () => {
                     await Usuarios.update({vacacionesVencidasRestantes: 0}, {where:{numero_empleado: usuario.numero_empleado}})
                 }
 
+                const [detalleEmpleado] = await db.query(queryObtenerEmpleado(usuario.numero_empleado), { type: QueryTypes.SELECT })
                 if(faltaUnMes && usuario.diasVacacionesRestantes > 0){
                     let correo
-                    const [detalleEmpleado] = await db.query(queryObtenerEmpleado(usuario.numero_empleado), { type: QueryTypes.SELECT })
                     const [detalleJefe] = await db.query(queryObtenerEmpleado(usuario.numeroEmpleadoJefe), { type: QueryTypes.SELECT })
                     if (detalleEmpleado[0]?.correo && detalleEmpleado[0].correo !== '') {
                         correo = detalleEmpleado[0].correo
@@ -101,15 +102,15 @@ export const agregarPermisosProrroga = async () => {
                     }
                     await enviarCorreo([correo],`Aprovecha tus vacaciones: Queda un mes para tu aniversario`, mensajeCorreoMesVacaciones(usuario, proximoAniversario))
                 }else if(faltaQuinceDias && usuario.diasVacacionesRestantes > 0){
-                    const { data } = await apiSistemas.post('/permisos/justificantes/prorroga', usuario.dataValues)
-                }else if(esAniversario){
-                    const { data } = await apiSistemas.delete('/permisos/justificantes/prorroga', { data: usuario.dataValues })
+                    const { data } = await apiSistemas.post('/permisos/justificantes/prorroga', detalleEmpleado[0])
+                }else if(esAniversario && aniosEnEmpresa > 0){
+                    const { data } = await apiSistemas.delete('/permisos/justificantes/prorroga', { data: detalleEmpleado[0] })
                     await Usuarios.update({diasVacacionesLey: vacaciones.diasAsignados, diasVacacionesRestantes: vacaciones.diasAsignados}, {where:{numero_empleado: usuario.numero_empleado}})
                 }
                 continue
         }
         return
     } catch ( error ) {
-        console.log( error )
+        await enviarCorreoErrores(`[Error agregarPermisosProrroga / [${error.message}]`)
     }
 }

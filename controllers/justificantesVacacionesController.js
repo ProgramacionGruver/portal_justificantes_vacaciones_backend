@@ -2025,7 +2025,7 @@ export const obtenerAutorizacionesPendientes = async (req, res) => {
         continue
       }
  
-     return res.json(resultadoFinal)
+     return
     
   } catch (error) {
     await enviarCorreoErrores(`[Error general correos pendientes / [${error.message}]`)

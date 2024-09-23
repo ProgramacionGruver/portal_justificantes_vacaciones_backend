@@ -688,3 +688,49 @@ const formatDateTime = (fecha) => {
 
   return `${date.getUTCFullYear()}-${formattedMonth}-${formattedDay} ${hours}:${minutes}:${seconds}`
 }
+
+export const obtenerDiasFeriados = async (req, res) => {
+  try {
+    const diasFeriados = await DiasFeriados.findAll()
+    return res.json(diasFeriados)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const agregarDiasFeriados = async(req, res) => {
+  try {
+    const diaFeriado = await DiasFeriados.create(req.body)
+    return res.json(diaFeriado)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const actualizarDiasFeriados = async (req, res) => {
+  try {
+    const { idDiaFeriado } = req.params
+    const diaFeriado = await DiasFeriados.findOne({ where: { idDiaFeriado } })
+    if (!diaFeriado) {
+      return res.status(500).json({ message: "No se encontro el registro" })
+    }
+    const diasFeriados = await DiasFeriados.update(req.body, { where: { idDiaFeriado } })
+    return res.json(diasFeriados)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}
+
+export const eliminarDiasFeriados = async (req, res) => {
+  try {
+    const { idDiaFeriado } = req.params
+    const diaFeriado = await DiasFeriados.findOne({ where: { idDiaFeriado } })
+    if (!diaFeriado) {
+      return res.status(500).json({ message: "No se encontro el registro" })
+    }
+    const diasFeriados = await DiasFeriados.destroy({ where: { idDiaFeriado } })
+    return res.json(diasFeriados)
+  } catch (error) {
+    return res.status(500).json({ message: "Error en el sistema.(" + error.message + ")" })
+  }
+}

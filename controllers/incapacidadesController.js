@@ -108,7 +108,7 @@ export const actualizarIncapacidades = async (req, res) => {
     const diasIncapacidades = JSON.parse(req.body.diasIncapacidades)
     const diasIncapacidadesNomina = JSON.parse(req.body.diasIncapacidadesNomina)
 
-    const archivosSubidos = []
+    let archivosSubidos = []
     const guardarArchivo = async (campo, sufijo = '') => {
       if (req.files && req.files[campo]) {
         const archivo = req.files[campo][0]
@@ -154,7 +154,7 @@ export const actualizarIncapacidades = async (req, res) => {
 
       await incapacidad.update(diasIncapacidadesNomina, { transaction: transaccion })
 
-      const listaDias = []
+      let listaDias = []
       for (const dias of diasIncapacidades) {
         const nuevoRegistro = await Incapacidades.create(dias, { transaction: transaccion })
         listaDias.push(nuevoRegistro)

@@ -7,6 +7,7 @@ import Empresas from './Empresas.js'
 import Sucursales from './Sucursales.js'
 import Departamentos from './Departamentos.js'
 import CatalogoMotivos from './CatalogoMotivos.js'
+import JustificantesMasivos from './JustificantesMasivos.js'
 
 const Solicitudes = db.define('solicitudes', {
     idSolicitud: {
@@ -46,8 +47,11 @@ const Solicitudes = db.define('solicitudes', {
     descripcionMotivo: {
         type: DataTypes.STRING(350),
         allowNull: true,
-    }
-
+    },
+    folioJustificanteMasivo: {
+        type: DataTypes.STRING,
+        allowNull: true
+    },
 },
     {
         sequelize,
@@ -71,5 +75,8 @@ Solicitudes.belongsTo(Departamentos, { foreignKey: 'claveDepartamento', targetKe
 
 CatalogoMotivos.hasMany(Solicitudes, { foreignKey: 'idMotivo' })
 Solicitudes.belongsTo(CatalogoMotivos, { foreignKey: 'idMotivo' })
+
+JustificantesMasivos.hasMany(Solicitudes, { foreignKey: 'folioJustificanteMasivo', sourceKey: 'folioJustificanteMasivo' });
+Solicitudes.belongsTo(JustificantesMasivos, { foreignKey: 'folioJustificanteMasivo', targetKey: 'folioJustificanteMasivo' });
 
 export default Solicitudes

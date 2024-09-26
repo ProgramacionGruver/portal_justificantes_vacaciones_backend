@@ -12,6 +12,7 @@ import Solicitudes from '../models/Solicitudes.js'
 import SolicitudDetalle from '../models/SolicitudDetalle.js'
 import AutorizacionesSolicitudes from '../models/AutorizacionesSolicitudes.js'
 import DepartamentosSucursales from '../models/DepartamentosSucursales.js'
+import JustificantesMasivos from '../models/JustificantesMasivos.js'
 import { URL_JUSTIFICANTES_VACACIONES } from '../constant/estatusConst.js'
 import { encryptarObjeto } from "../helpers/jsencrypt.js"
 import { enviarCorreo } from '../constant/envioCorreo.js'
@@ -165,7 +166,6 @@ export const obtenerTipoSolicitudes = async (req, res) => {
     return res.status(500).json({ message: "Error en el sistema: " + error.message })
   }
 }
-
 
 export const obtenerDetalleVacacionesDiasEconomicos = async (req, res) => {
   try {
@@ -2111,6 +2111,160 @@ export const rechazarSolicitudesPendientes = async (req, res) => {
 
   } catch (error) {
     await enviarCorreoErrores(`[Error al rechazar correos pendientes / [${error.message}]`)
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const obtenerJustificantesMasivos = async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin } = req.body
+
+    const fechaInicioStr = dayjs(fechaInicio).format('YYYY-MM-DD')
+    const fechaFinStr = dayjs(fechaFin).format('YYYY-MM-DD')
+
+    const todasSolicitudes = await JustificantesMasivos.findAll({ where: {
+      [Op.and]: [
+        Sequelize.where(Sequelize.literal(`CAST(justificantes_masivos.createdAt AS DATE)`), {
+          [Op.gte]: fechaInicioStr
+        }),
+        Sequelize.where(Sequelize.literal(`CAST(justificantes_masivos.createdAt AS DATE)`), {
+          [Op.lte]: fechaFinStr
+        })
+      ]
+    },
+    include: [
+      {
+        model: Solicitudes,
+        include: [
+          Usuarios,
+          CatalogoTipoSolicitudes,
+          Empresas,
+          Sucursales,
+          Departamentos,
+          CatalogoMotivos,
+          {
+            model: SolicitudDetalle,
+            include: [
+              CatalogoEstatus,
+              {
+                model: AutorizacionesSolicitudes,
+                include: [CatalogoEstatus],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+      order: [['idJustificantesMasivos', 'DESC']],
+    })
+
+    return res.json(todasSolicitudes)
+  } catch (error) {
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}
+
+export const agregarJustificantesMasivos = async (req, res) => {
+  const transaccion = await db.transaction()
+
+  try {
+    const PASE_ENTRADA = 1
+    const PASE_SALIDA = 2
+    const FALTA = 3
+    
+    const justificante = req.body
+    const solicitudes = req.body.solicitudes
+
+    // Formatear la fecha
+    const fechaFolio = new Date()
+    const mesFolio = (fechaFolio.getMonth() + 1).toString().padStart(2, '0')
+    const diaFolio = fechaFolio.getDate().toString().padStart(2, '0')
+    const añoFolio = fechaFolio.getFullYear().toString()
+    const fechaFormateadaFolio = `${diaFolio}${mesFolio}${añoFolio}`
+
+    const nuevoJustificante = await JustificantesMasivos.create(req.body, { transaction: transaccion })
+    const folioJustificanteMasivo = `JUSTIFICANTE-MASIVO-${justificante.claveSucursal}-${fechaFormateadaFolio}-${nuevoJustificante.idJustificantesMasivos}`
+    await JustificantesMasivos.update({ folioJustificanteMasivo }, { where: { idJustificantesMasivos: nuevoJustificante.idJustificantesMasivos }, transaction: transaccion })
+
+
+    for (const nuevosDatos of solicitudes) {
+      const nuevaSolicitud = await Solicitudes.create(nuevosDatos, { transaction: transaccion })
+
+      const {  idSolicitud } = nuevaSolicitud
+
+      const folio = `${folioJustificanteMasivo}-${idSolicitud}`
+
+      await Solicitudes.update({ folio: folio, folioJustificanteMasivo}, { where: { idSolicitud: idSolicitud }, transaction: transaccion })
+
+      nuevosDatos.idEstatusSolicitud = 2
+      nuevosDatos.folio = folio
+
+      const detalles = []
+
+      // Si es PASE_ENTRADA o PASE_SALIDA, crear un detalle
+      if ([PASE_ENTRADA, PASE_SALIDA].includes(nuevosDatos.idMotivo)) {
+        const detalle = await SolicitudDetalle.create(nuevosDatos, { transaction: transaccion })
+        detalles.push(detalle)
+      }
+
+      // Si es FALTA y hay fechas seleccionadas, crear múltiples detalles
+      if ([FALTA].includes(nuevosDatos.idMotivo) && nuevosDatos.fechasSeleccionadas?.length > 0) {
+        const fechasMapeadas = nuevosDatos.fechasSeleccionadas.map(fecha => {
+          return {
+            folio: folio,
+            fechaDiaSolicitado: fecha,
+            idEstatusSolicitud: nuevosDatos.idEstatusSolicitud,
+            horaDiaSolicitado: null,
+          }
+        })
+        const detallesFalta = await SolicitudDetalle.bulkCreate(fechasMapeadas, { transaction: transaccion })
+        detalles.push(...detallesFalta)
+      }
+
+      for (const detalle of detalles) {
+        await AutorizacionesSolicitudes.create({
+          idSolicitudDetalle: detalle.idSolicitudDetalle,
+          numeroEmpleadoAutoriza: justificante.numero_empleado,
+          nombreEmpleadoAutoriza: justificante.nombre,
+          idTipoAutorizacion: 1,
+          idEstatusAutorizacion: 2,
+          comentario: 'Autorizacion Automatica por Justificante Masivo',
+        }, { transaction: transaccion })
+      }
+    }
+
+    await transaccion.commit()
+
+    const justificanteMasivo = await JustificantesMasivos.findOne({ 
+    where: { folioJustificanteMasivo },
+    include: [
+      {
+        model: Solicitudes,
+        include: [
+          Usuarios,
+          CatalogoTipoSolicitudes,
+          Empresas,
+          Sucursales,
+          Departamentos,
+          CatalogoMotivos,
+          {
+            model: SolicitudDetalle,
+            include: [
+              CatalogoEstatus,
+              {
+                model: AutorizacionesSolicitudes,
+                include: [CatalogoEstatus],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    })
+
+    return res.json(justificanteMasivo)
+  } catch (error) {
+    await transaccion.rollback()
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }

@@ -134,6 +134,15 @@ const IncapacidadesNominas = db.define('incapacidades_nominas', {
         type: DataTypes.STRING,
         allowNull: true,
     },
+    descuentoDiasEconomicos: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+    numeroDiasEconomicos: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 },
     {
         sequelize,

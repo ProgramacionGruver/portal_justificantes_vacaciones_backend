@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import path from 'path'
 import fs from 'fs'
 import { Op, Sequelize} from 'sequelize'
+import Usuarios from '../models/Usuarios.js'
 
 const pathFotos = '/recursos/documentos/portalJustificantes/incapacidades'
 
@@ -82,6 +83,15 @@ export const agregarIncapacidades = async (req, res) => {
     }
     incapacidad = await IncapacidadesNominas.create(diasIncapacidadesNomina, { transaction: transaccion })
 
+    if(diasIncapacidadesNomina.descuentoDiasEconomicos){
+      let usuario = await Usuarios.findOne({
+        where: { numero_empleado: diasIncapacidadesNomina.numero_empleado },
+        transaction: transaccion
+      })
+      const diasRestantes = parseInt(usuario.diasEconomicosRestantes - diasIncapacidadesNomina.numeroDiasEconomicos)
+      await usuario.update({diasEconomicosRestantes: diasRestantes}, { transaction: transaccion })
+    }
+
     const listaDias = []
     for (const dias of diasIncapacidades) {
       const nuevoRegistro = await Incapacidades.create(dias, { transaction: transaccion })
@@ -151,6 +161,35 @@ export const actualizarIncapacidades = async (req, res) => {
         where: { folio: incapacidad.folio },
         transaction: transaccion
       })
+
+      if (incapacidad.descuentoDiasEconomicos && incapacidad.numeroDiasEconomicos !== diasIncapacidadesNomina.numeroDiasEconomicos) {
+        let usuario = await Usuarios.findOne({
+          where: { numero_empleado: diasIncapacidadesNomina.numero_empleado },
+          transaction: transaccion
+        })
+
+        let diferenciaDias, ajusteDias, diasRestantes 
+        if(diasIncapacidadesNomina.numeroDiasEconomicos === 0){
+          diasRestantes = Math.max(0, usuario.diasEconomicosRestantes + incapacidad.numeroDiasEconomicos )
+        }else{
+          diferenciaDias = Math.abs(incapacidad.numeroDiasEconomicos - diasIncapacidadesNomina.numeroDiasEconomicos)
+          ajusteDias = incapacidad.numeroDiasEconomicos > diasIncapacidadesNomina.numeroDiasEconomicos ? diferenciaDias : -diferenciaDias;
+          diasRestantes = Math.max(0, usuario.diasEconomicosRestantes + ajusteDias)
+        }
+      
+        await usuario.update({ diasEconomicosRestantes: diasRestantes }, { transaction: transaccion })
+        incapacidad.dataValues.usuario = usuario
+      }
+
+      if (!incapacidad.descuentoDiasEconomicos && diasIncapacidadesNomina.descuentoDiasEconomicos) {
+        let usuario = await Usuarios.findOne({
+          where: { numero_empleado: diasIncapacidadesNomina.numero_empleado },
+          transaction: transaccion
+        })
+        const diasRestantes = parseInt(usuario.diasEconomicosRestantes - diasIncapacidadesNomina.numeroDiasEconomicos)
+        await usuario.update({diasEconomicosRestantes: diasRestantes}, { transaction: transaccion })
+        incapacidad.dataValues.usuario = usuario
+      }
 
       await incapacidad.update(diasIncapacidadesNomina, { transaction: transaccion })
 

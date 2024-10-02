@@ -90,6 +90,7 @@ export const agregarIncapacidades = async (req, res) => {
       })
       const diasRestantes = parseInt(usuario.diasEconomicosRestantes - diasIncapacidadesNomina.numeroDiasEconomicos)
       await usuario.update({diasEconomicosRestantes: diasRestantes}, { transaction: transaccion })
+      incapacidad.dataValues.usuario = usuario
     }
 
     const listaDias = []

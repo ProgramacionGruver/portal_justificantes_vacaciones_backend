@@ -68,7 +68,7 @@ export const agregarPermisosProrroga = async () => {
 
                 //DIAS DE VACACIONES CORRESPONDIENTES
                 const turnoEspecialSabado = turnosEspeciales.filter(elemento => elemento.turno ===  usuario.turnoSabados)
-                const trabajaSabado = turnoEspecialSabado.length === 0
+                const trabajaSabado = turnoEspecialSabado.length === 0 || turnoEspecialSabado[0]?.turno !== 'No Labora'
                 const vacaciones = catalogoVacaciones.find(dia => dia.aniosLaborados === aniosEnEmpresa && dia.sabadoLaborado === trabajaSabado)
                 
                 //NOTIFICACION DIAS POR VENCER
@@ -108,7 +108,7 @@ export const agregarPermisosProrroga = async () => {
                     await Usuarios.update({diasVacacionesLey: vacaciones.diasAsignados, diasVacacionesRestantes: vacaciones.diasAsignados}, {where:{numero_empleado: usuario.numero_empleado}})
                 }
                 continue
-        }
+                }
         return
     } catch ( error ) {
         await enviarCorreoErrores(`[Error agregarPermisosProrroga / [${error.message}]`)

@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado, obtenerAutorizacionesPendientes, rechazarSolicitudesPendientes, solicitarCapacitaciones, finalizarSolicitudCapacitaciones, obtenerJustificantesMasivos, agregarJustificantesMasivos} from '../controllers/justificantesVacacionesController.js'
+import { obtenerUsuarios, obtenerEmpresas, obtenerSucursales, obtenerSucursalesAgrupadasEmpresa ,obtenerDepartamentos, obtenerEstatus, obtenerMotivos, obtenerTipoSolicitudes, obtenerDetalleVacacionesDiasEconomicos, obtenerDetalleEmpleadoYJefeDirecto, solicitarAusenciasYRetardos, solicitarVacaciones, solicitarDiasEconomicos, solicitarDiasGanados, solicitarVacacionesVencidas, solicitarSabados5s, obtenerSolicitudesPorEmpleado, obtenerSolicitudPorFolio, actualizarAutorizaciones, finalizarSolicitudAusenciasYRetardos, finalizarSolicitudVacaciones, finalizarSolicitudDiasEconomicos, obtenerDetalleUsuario, obtenerTodasSolicitudes, obtenerDepartamentosSucursales, finalizarSolicitudDiasGanados, finalizarSolicitudVacacionesVencidas, finalizarSolicitudSabados5s, solicitarProrroga, obtenerProrrogasPorEmpleado, finalizarSolicitudProrroga, obtenerAutorizacionesPorEmpleado, obtenerAutorizacionesPendientes, rechazarSolicitudesPendientes, solicitarCapacitaciones, finalizarSolicitudCapacitaciones, obtenerJustificantesMasivos, agregarJustificantesMasivos, cancelarAutorizaciones} from '../controllers/justificantesVacacionesController.js'
 
 const router = express.Router()
 
@@ -44,5 +44,7 @@ router.post('/finalizarSolicitudVacacionesVencidas/:folio', finalizarSolicitudVa
 router.post('/finalizarSolicitudSabados5s/:folio', finalizarSolicitudSabados5s)
 router.post('/finalizarSolicitudProrroga/:folio', finalizarSolicitudProrroga)
 router.post('/finalizarSolicitudCapacitaciones/:folio', finalizarSolicitudCapacitaciones)
+
+router.post('/cancelarAutorizaciones', cancelarAutorizaciones)
 
 export default router

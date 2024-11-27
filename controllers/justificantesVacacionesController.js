@@ -2268,3 +2268,54 @@ export const agregarJustificantesMasivos = async (req, res) => {
     return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
   }
 }
+
+export const cancelarAutorizaciones = async (req, res) => {
+  const transaccion = await db.transaction()
+  try {
+    const { idSolicitudDetalle, nombre } = req.body
+
+    const solicitudEncontrada = await SolicitudDetalle.findOne({where:{idSolicitudDetalle}, transaction: transaccion })
+
+    if(solicitudEncontrada){
+      const solicitud = await Solicitudes.findOne({ include: [Usuarios], where:{folio: solicitudEncontrada.folio}, transaction: transaccion })
+      await AutorizacionesSolicitudes.update(
+        { idEstatusAutorizacion: 4, comentario: `Cancelacion RH (${nombre})`},
+        { where: { idSolicitudDetalle }, transaction: transaccion }
+      )
+      await SolicitudDetalle.update(
+        { idEstatusSolicitud: 4 },
+        { where: { idSolicitudDetalle },transaction: transaccion }
+      )
+      
+      if(solicitud.idTipoSolicitud === 2){
+        const diasRestantesActualizados = solicitud.usuario.diasVacacionesRestantes + 1
+        await Usuarios.update(
+          { diasVacacionesRestantes: diasRestantesActualizados },
+          { where: { numero_empleado: solicitud.usuario.numero_empleado }, transaction: transaccion }
+        )
+      }else if(solicitud.idTipoSolicitud === 3){
+        const diasRestantesActualizados = solicitud.usuario.diasEconomicosRestantes + 1
+        await Usuarios.update(
+          { diasEconomicosRestantes: diasRestantesActualizados },
+          { where: { numero_empleado: solicitud.usuario.numero_empleado }, transaction: transaccion }
+        )
+      }
+    }else{
+      return res.status(500).json({ message: "No se encontro el registro" })
+    }
+
+    const solicitudActualizada = await SolicitudDetalle.findOne({include: [
+      CatalogoEstatus,
+      {
+        model: AutorizacionesSolicitudes,
+        include: [CatalogoEstatus],
+      },
+    ],where:{idSolicitudDetalle}, transaction: transaccion })
+
+    await transaccion.commit()
+    return res.json(solicitudActualizada)
+  } catch (error) {
+    await transaccion.rollback()
+    return res.status(500).json({ message: `Error en el sistema: ${error.message}` })
+  }
+}

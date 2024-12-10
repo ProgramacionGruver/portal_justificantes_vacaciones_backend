@@ -44,7 +44,7 @@ cron.schedule('30 1 2,17 * *', async () => {
     await obtenerAutorizacionesPendientes()
 })
 
-cron.schedule('30 1 3,18 * *', async () => {
+cron.schedule('30 1 4,19 * *', async () => {
     await rechazarSolicitudesPendientes()
 })
 

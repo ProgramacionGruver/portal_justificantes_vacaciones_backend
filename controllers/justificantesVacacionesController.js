@@ -2038,11 +2038,11 @@ export const rechazarSolicitudesPendientes = async (req, res) => {
     const hoy = dayjs()
     let fechaInicio, fechaFin
 
-    if (hoy.date() === 3) {
+    if (hoy.date() === 4) {
       const mesAnterior = hoy.subtract(1, 'month')
       fechaInicio = mesAnterior.date(16).format('YYYY-MM-DD')
       fechaFin = mesAnterior.endOf('month').format('YYYY-MM-DD')
-    } else if (hoy.date() === 18) {
+    } else if (hoy.date() === 19) {
       fechaInicio = hoy.date(1).format('YYYY-MM-DD')
       fechaFin = hoy.date(15).format('YYYY-MM-DD')
     }
